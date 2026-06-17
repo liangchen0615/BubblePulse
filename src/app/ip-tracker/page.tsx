@@ -9,7 +9,8 @@ import { useBrandPreset } from "@/lib/brand-context";
 import { ips as mockIps } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Target, TrendingUp, TrendingDown, Minus, Zap, AlertCircle, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Target, TrendingUp, TrendingDown, Minus, Zap, AlertCircle, Loader2, Search } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import type { Feasibility, IpCategory, IP } from "@/types";
 
@@ -35,6 +36,7 @@ export default function IpTrackerPage() {
   const { brandPreset, activeStrategy } = useBrandPreset();
   const [selCategories, setSelCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"overlap" | "heat">("overlap");
+  const [search, setSearch] = useState("");
   const [dataSource, setDataSource] = useState<"mock" | "merged" | "wikipedia">("mock");
   const [apiData, setApiData] = useState<IP[]>([]);
   const [apiLoading, setApiLoading] = useState(false);
@@ -55,6 +57,7 @@ export default function IpTrackerPage() {
   const filtered = allIps
     .filter((ip) => (brandPreset ? ip.audienceOverlap >= 55 : true))
     .filter((ip) => committed.length === 0 || committed.includes(ip.category))
+    .filter((ip) => !search || ip.name.toLowerCase().includes(search.toLowerCase()) || ip.category.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => sortBy === "overlap" ? b.audienceOverlap - a.audienceOverlap : b.heatScore - a.heatScore);
 
   const applyFilters = () => setCommitted(selCategories);
@@ -77,6 +80,11 @@ export default function IpTrackerPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative w-48">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <Input placeholder="搜索 IP..." className="pl-9 h-8 text-sm border-slate-700 bg-slate-800/50" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+
           {/* Data source */}
           <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
             {(["mock", "merged", "wikipedia"] as const).map((s) => (
