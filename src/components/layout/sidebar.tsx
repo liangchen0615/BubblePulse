@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,12 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { brandPreset, toggleBrandPreset } = useBrandPreset();
+  const [pulseKey, setPulseKey] = useState(0);
+
+  const handleToggle = () => {
+    toggleBrandPreset();
+    setPulseKey((k) => k + 1);
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-700 bg-slate-800 flex flex-col">
@@ -39,19 +46,21 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
         {/* Brand preset global toggle */}
         <button
-          onClick={toggleBrandPreset}
+          key={pulseKey}
+          onClick={handleToggle}
           className={cn(
             "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all mb-2 border",
+            "animate-brand-pulse",
             brandPreset
               ? "border-amber-500/40 bg-amber-500/10 text-amber-400"
               : "border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-400"
           )}
         >
           <span className={cn(
-            "flex h-4 w-4 items-center justify-center rounded text-xs",
-            brandPreset ? "bg-amber-500/20" : "bg-slate-700"
+            "flex h-4 w-4 items-center justify-center rounded text-xs transition-colors duration-300",
+            brandPreset ? "bg-amber-500/20 text-amber-400" : "bg-slate-700 text-slate-500"
           )}>
-            {brandPreset ? "🔗" : "⊘"}
+            {brandPreset ? "◆" : "◇"}
           </span>
           {brandPreset ? "品牌预设 · ON" : "自由筛选"}
         </button>

@@ -9,13 +9,18 @@ interface FilterSelectProps {
   onValueChange: (v: string) => void;
   options: { value: string; label: string }[];
   width?: string;
+  glow?: boolean;
 }
 
-export function FilterSelect({ label, value, onValueChange, options, width = "w-28" }: FilterSelectProps) {
+export function FilterSelect({ label, value, onValueChange, options, width = "w-28", glow }: FilterSelectProps) {
   return (
     <Select value={value} onValueChange={(v) => onValueChange(v || "all")}>
-      <SelectTrigger className={cn("h-7 text-xs gap-1", width)}>
-        <span className="text-[10px] text-slate-500 shrink-0">{label}</span>
+      <SelectTrigger className={cn(
+        "h-7 text-xs gap-1 transition-all duration-300",
+        width,
+        glow && "brand-preset-active brand-preset-glow"
+      )}>
+        <span className={cn("text-[10px] shrink-0 transition-colors duration-300", glow ? "text-amber-400" : "text-slate-500")}>{label}</span>
         <SelectValue />
       </SelectTrigger>
       <SelectContent className="min-w-0 w-(--anchor-width)">

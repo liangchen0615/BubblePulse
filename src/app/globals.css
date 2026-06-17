@@ -131,3 +131,40 @@
     @apply font-sans;
   }
 }
+
+/* Brand preset animations */
+@keyframes brand-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+@keyframes brand-glow {
+  0%, 100% { border-color: rgba(245, 158, 11, 0.3); }
+  50% { border-color: rgba(245, 158, 11, 0.6); }
+}
+
+.animate-brand-pulse {
+  animation: brand-pulse 0.6s ease-out;
+}
+
+.brand-preset-glow {
+  animation: brand-glow 2s ease-in-out infinite;
+}
+
+.brand-preset-active {
+  border-color: rgba(245, 158, 11, 0.5) !important;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.12);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.filter-bar-expand {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.3s ease;
+}
+.filter-bar-expand.open {
+  max-height: 500px;
+  opacity: 1;
+}

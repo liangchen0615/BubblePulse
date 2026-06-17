@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -80,6 +80,32 @@ export default function TrendsPage() {
   const [apiError, setApiError] = useState(false);
   const [apiSources, setApiSources] = useState<string[]>([]);
 
+  // Track which filters are brand-preset (for amber glow) vs user overridden
+  const [presetGlow, setPresetGlow] = useState<Set<string>>(new Set());
+  const prevPresetRef = useRef(brandPreset);
+
+  // Sync filters with brand preset
+  useEffect(() => {
+    if (brandPreset && !prevPresetRef.current) {
+      // Turning ON: pre-fill from brand
+      setRegion("all");
+      setCountry("all"); // show all brand-countries via filter logic
+      setLanguage("all");
+      setEmotion("all");
+      setGender(brandFilters.gender);
+      setLifecycleStage("all");
+      setFormat("all");
+      setOverlapThreshold(0);
+      setPresetGlow(new Set(["country", "language", "emotion", "gender"]));
+    } else if (!brandPreset && prevPresetRef.current) {
+      // Turning OFF: reset all
+      setRegion("all"); setCountry("all"); setLanguage("all"); setEmotion("all");
+      setGender("all"); setLifecycleStage("all"); setFormat("all"); setOverlapThreshold(0);
+      setPresetGlow(new Set());
+    }
+    prevPresetRef.current = brandPreset;
+  }, [brandPreset, brandFilters]);
+
   const fetchApiData = useCallback(async () => {
     setApiLoading(true);
     setApiError(false);
@@ -131,11 +157,21 @@ export default function TrendsPage() {
     })
     .sort((a, b) => b.audienceOverlap - a.audienceOverlap);
 
-  const effectiveCountry = brandPreset ? "all" : country;
-  const effectiveLanguage = brandPreset ? "all" : language;
-  const effectiveEmotion = brandPreset ? "all" : emotion;
-  const effectiveGender = brandPreset ? "all" : gender;
+  const effectiveCountry = country;
+  const effectiveLanguage = language;
+  const effectiveEmotion = emotion;
+  const effectiveGender = brandPreset ? brandFilters.gender : gender;
   const countriesForRegion = region !== "all" ? regionCountries[region as Market] : null;
+
+  // Wrappers that remove preset glow on manual user edit
+  const onPlatformChange = (v: string) => { setPresetGlow((p) => { const n = new Set(p); n.delete("platform"); return n; }); setPlatform(v); };
+  const onRegionChange = (v: string) => { setPresetGlow((p) => { const n = new Set(p); n.delete("region"); return n; }); setRegion(v); setCountry("all"); };
+  const onCountryChange = (v: string) => { setPresetGlow((p) => { const n = new Set(p); n.delete("country"); return n; }); setCountry(v); };
+  const onLanguageChange = (v: string) => { setPresetGlow((p) => { const n = new Set(p); n.delete("language"); return n; }); setLanguage(v); };
+  const onEmotionChange = (v: string) => { setPresetGlow((p) => { const n = new Set(p); n.delete("emotion"); return n; }); setEmotion(v); };
+  const onGenderChange = (v: string) => { setPresetGlow((p) => { const n = new Set(p); n.delete("gender"); return n; }); setGender(v); };
+  const onLifecycleChange = (v: string) => { setPresetGlow((p) => { const n = new Set(p); n.delete("lifecycle"); return n; }); setLifecycleStage(v); };
+  const onFormatChange = (v: string) => { setPresetGlow((p) => { const n = new Set(p); n.delete("format"); return n; }); setFormat(v); };
 
   const activeFilterCount = (
     brandPreset
@@ -216,8 +252,8 @@ export default function TrendsPage() {
           <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-3 space-y-3">
             {brandPreset && (
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-amber-400 font-medium">🔗 品牌预设已激活</span>
-                <span className="text-xs text-slate-500">—</span>
+                <span className="text-xs text-amber-400 font-medium">◆ 品牌预设 · CHAGEE</span>
+                <span className="text-xs text-slate-600">—</span>
                 {brandFilters.markets.map((m) => (
                   <Badge key={m} variant="outline" className="text-xs border-amber-500/30 text-amber-400/80 bg-amber-500/5">
                     {marketLabel[m]}
@@ -226,10 +262,8 @@ export default function TrendsPage() {
                 <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400/80 bg-amber-500/5">
                   {brandFilters.ageMin}-{brandFilters.ageMax}岁
                 </Badge>
-                <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400/80 bg-amber-500/5">
-                  情绪: {brandFilters.emotions.length}种
-                </Badge>
-                <span className="text-xs text-slate-500">— 在侧边栏关闭以自由筛选</span>
+                <span className="text-xs text-slate-600">—</span>
+                <span className="text-xs text-slate-500">筛选已预填品牌值（发光项），可手动修改</span>
               </div>
             )}
 
@@ -237,7 +271,7 @@ export default function TrendsPage() {
               <FilterSelect
                 label="平台"
                 value={platform}
-                onValueChange={setPlatform}
+                onValueChange={onPlatformChange}
                 options={[
                   { value: "all", label: "全部平台" },
                   { value: "tiktok", label: "TikTok" },
@@ -246,75 +280,73 @@ export default function TrendsPage() {
                   { value: "youtube", label: "YouTube" },
                 ]}
               />
-
-              {!brandPreset && (
-                <>
-                  <FilterSelect
-                    label="区域"
-                    value={region}
-                    onValueChange={(v) => { setRegion(v); setCountry("all"); }}
-                    options={[
-                      { value: "all", label: "全部区域" },
-                      { value: "US", label: "北美" },
-                      { value: "UK", label: "欧洲" },
-                      { value: "AU", label: "澳洲" },
-                      { value: "SEA", label: "东南亚" },
-                    ]}
-                  />
-                  <FilterSelect
-                    label="国家"
-                    value={country}
-                    onValueChange={setCountry}
-                    options={[
-                      { value: "all", label: "全部国家" },
-                      ...(countriesForRegion || Object.keys(countryLabel) as Country[]).map((c) => ({
-                        value: c,
-                        label: countryLabel[c],
-                      })),
-                    ]}
-                  />
-                  <FilterSelect
-                    label="语言"
-                    value={language}
-                    onValueChange={setLanguage}
-                    options={[
-                      { value: "all", label: "全部语言" },
-                      ...(Object.keys(languageLabel) as Language[]).map((l) => ({
-                        value: l,
-                        label: languageLabel[l],
-                      })),
-                    ]}
-                  />
-                  <FilterSelect
-                    label="情绪"
-                    value={emotion}
-                    onValueChange={setEmotion}
-                    width="w-32"
-                    options={[
-                      { value: "all", label: "全部情绪" },
-                      ...(Object.keys(emotionLabel) as Emotion[]).map((e) => ({
-                        value: e,
-                        label: emotionLabel[e],
-                      })),
-                    ]}
-                  />
-                  <FilterSelect
-                    label="性别"
-                    value={gender}
-                    onValueChange={setGender}
-                    options={[
-                      { value: "all", label: "全部性别" },
-                      { value: "female", label: "女性为主" },
-                      { value: "male", label: "男性为主" },
-                    ]}
-                  />
-                </>
-              )}
-
+              <FilterSelect
+                label="区域"
+                value={region}
+                onValueChange={onRegionChange}
+                options={[
+                  { value: "all", label: "全部区域" },
+                  { value: "US", label: "北美" },
+                  { value: "UK", label: "欧洲" },
+                  { value: "AU", label: "澳洲" },
+                  { value: "SEA", label: "东南亚" },
+                ]}
+              />
+              <FilterSelect
+                label="国家"
+                value={country}
+                onValueChange={onCountryChange}
+                glow={presetGlow.has("country")}
+                options={[
+                  { value: "all", label: "全部国家" },
+                  ...(countriesForRegion || Object.keys(countryLabel) as Country[]).map((c) => ({
+                    value: c,
+                    label: countryLabel[c],
+                  })),
+                ]}
+              />
+              <FilterSelect
+                label="语言"
+                value={language}
+                onValueChange={onLanguageChange}
+                glow={presetGlow.has("language")}
+                options={[
+                  { value: "all", label: "全部语言" },
+                  ...(Object.keys(languageLabel) as Language[]).map((l) => ({
+                    value: l,
+                    label: languageLabel[l],
+                  })),
+                ]}
+              />
+              <FilterSelect
+                label="情绪"
+                value={emotion}
+                onValueChange={onEmotionChange}
+                glow={presetGlow.has("emotion")}
+                width="w-32"
+                options={[
+                  { value: "all", label: "全部情绪" },
+                  ...(Object.keys(emotionLabel) as Emotion[]).map((e) => ({
+                    value: e,
+                    label: emotionLabel[e],
+                  })),
+                ]}
+              />
+              <FilterSelect
+                label="性别"
+                value={gender}
+                onValueChange={onGenderChange}
+                glow={presetGlow.has("gender")}
+                options={[
+                  { value: "all", label: "全部性别" },
+                  { value: "female", label: "女性为主" },
+                  { value: "male", label: "男性为主" },
+                ]}
+              />
               <FilterSelect
                 label="阶段"
                 value={lifecycleStage}
-                onValueChange={setLifecycleStage}
+                onValueChange={onLifecycleChange}
                 options={[
                   { value: "all", label: "全部阶段" },
                   { value: "rising", label: "Rising" },
@@ -325,7 +357,7 @@ export default function TrendsPage() {
               <FilterSelect
                 label="格式"
                 value={format}
-                onValueChange={setFormat}
+                onValueChange={onFormatChange}
                 options={[
                   { value: "all", label: "全部格式" },
                   { value: "hashtag", label: "Hashtag" },
