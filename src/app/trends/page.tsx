@@ -77,7 +77,7 @@ export default function TrendsPage() {
   }>({ platforms: [], countries: [], languages: [], emotions: [], genders: [], lifecycle: [], formats: [], overlap: 0 });
 
   // Data source
-  const [dataSource, setDataSource] = useState<"mock" | "merged" | "youtube" | "google">("mock");
+  const [dataSource, setDataSource] = useState<"merged" | "youtube" | "google">("merged");
   const [apiData, setApiData] = useState<ContentItem[]>([]);
   const [apiLoading, setApiLoading] = useState(false);
   const [apiError, setApiError] = useState(false);
@@ -131,9 +131,9 @@ export default function TrendsPage() {
     finally { setApiLoading(false); }
   }, [dataSource]);
 
-  useEffect(() => { if (dataSource !== "mock") fetchApiData(); }, [dataSource, fetchApiData]);
+  useEffect(() => { fetchApiData(); }, [dataSource, fetchApiData]);
 
-  const allTrends = dataSource === "mock" ? mockTrends : apiData;
+  const allTrends = apiData.length > 0 ? apiData : mockTrends;
 
   // Apply committed filters
   const filtered = allTrends
@@ -157,7 +157,7 @@ export default function TrendsPage() {
     .filter((t) => committed.lifecycle.length === 0 || committed.lifecycle.includes(t.lifecycle.stage))
     .filter((t) => committed.formats.length === 0 || committed.formats.includes(t.format))
     .filter((t) => t.audienceOverlap >= committed.overlap)
-    .sort((a, b) => b.audienceOverlap - a.audienceOverlap);
+    .sort((a, b) => b.metrics.views - a.metrics.views);
 
   // Active filter count
   const activeCount = committed.platforms.length + committed.countries.length + committed.languages.length +
@@ -281,13 +281,13 @@ export default function TrendsPage() {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Data source toggle */}
           <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
-            {(["mock", "merged", "youtube", "google"] as const).map((s) => (
+            {(["merged", "youtube", "google"] as const).map((s) => (
               <button
                 key={s}
-                onClick={() => { setDataSource(s); if (s === "mock") setApiData([]); }}
+                onClick={() => setDataSource(s)}
                 className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", dataSource === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}
               >
-                {s === "mock" ? "离线" : s === "merged" ? "混合" : s === "youtube" ? "YT" : "Google"}
+                {s === "merged" ? "全网" : s === "youtube" ? "YT" : "Google"}
               </button>
             ))}
           </span>
@@ -325,7 +325,9 @@ export default function TrendsPage() {
             <Card key={trend.id} className="border-slate-700 bg-slate-800/50 hover:border-amber-500/20 transition-colors">
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
-                  <OverlapBadge score={trend.audienceOverlap} />
+                  <span className={cn("text-base font-bold shrink-0 w-6 text-center", filtered.indexOf(trend) < 3 ? "text-amber-400" : "text-slate-600")}>
+                    {filtered.indexOf(trend) + 1}
+                  </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className="font-semibold text-slate-100">{trend.title}</h3>
