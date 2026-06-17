@@ -1,0 +1,172 @@
+import { NextResponse } from "next/server";
+import type { ContentItem, Platform, Language, Emotion, Country } from "@/types";
+
+interface YouTubeVideoItem {
+  id: string | { videoId: string };
+  snippet: {
+    title: string;
+    description: string;
+    thumbnails: { high: { url: string } };
+    channelTitle: string;
+    publishedAt: string;
+    tags?: string[];
+  };
+  statistics?: {
+    viewCount: string;
+    likeCount: string;
+    commentCount: string;
+  };
+}
+
+const regionCountryMap: Record<string, Country> = {
+  US: "US", GB: "UK", AU: "AU", SG: "SG", MY: "MY", TH: "TH",
+  ID: "ID", PH: "PH", VN: "VN", JP: "JP", KR: "KR", FR: "FR", DE: "DE", CA: "CA",
+};
+
+const countryLanguageMap: Record<Country, Language> = {
+  US: "en", UK: "en", AU: "en", CA: "en", SG: "en",
+  JP: "ja", KR: "ko", TH: "th", ID: "id", VN: "vi", PH: "tl", MY: "ms",
+  FR: "fr", DE: "de", CN: "zh",
+};
+
+const beverageQueries = [
+  "bubble tea recipe",
+  "matcha latte tutorial",
+  "tea ceremony japanese",
+  "boba shop tour",
+  "cafe aesthetic vlog",
+  "fruit tea making",
+  "chinese tea culture",
+  "milk tea review",
+];
+
+function guessEmotion(title: string): Emotion {
+  const t = title.toLowerCase();
+  if (t.match(/asmr|calm|relax|peaceful|soft|slow|quiet|meditation/)) return "calm";
+  if (t.match(/funny|comedy|prank|hilarious|lol|laugh|fail/)) return "humor";
+  if (t.match(/nostalgia|throwback|retro|old school|90s|memories/)) return "nostalgia";
+  if (t.match(/excit|hype|trailer|reveal|new|launch|epic|insane/)) return "excitement";
+  if (t.match(/emotion|cry|heartfelt|support|mental health|self care|wholesome/)) return "empathy";
+  if (t.match(/aesthetic|beautiful|stunning|amazing|satisfying|wow/)) return "awe";
+  if (t.match(/curious|mystery|how to|tutorial|behind|secret|hidden/)) return "curiosity";
+  return "joy";
+}
+
+function getVideoId(item: YouTubeVideoItem): string {
+  return typeof item.id === "string" ? item.id : item.id.videoId;
+}
+
+function mapToContentItem(video: YouTubeVideoItem, country: Country): ContentItem {
+  const tags = video.snippet.tags || [];
+  const views = parseInt(video.statistics?.viewCount || "0", 10) || 100000;
+  const likes = parseInt(video.statistics?.likeCount || "0", 10) || Math.floor(views * 0.05);
+  const comments = parseInt(video.statistics?.commentCount || "0", 10) || Math.floor(views * 0.002);
+  const language = countryLanguageMap[country] || "en";
+  const emotion = guessEmotion(video.snippet.title);
+  const videoId = getVideoId(video);
+
+  return {
+    id: `yt-${videoId}`,
+    platform: "youtube" as Platform,
+    title: video.snippet.title.slice(0, 80),
+    description: video.snippet.description?.slice(0, 200) || "",
+    thumbnailUrl: video.snippet.thumbnails?.high?.url || "",
+    url: `https://youtube.com/watch?v=${videoId}`,
+    metrics: {
+      views,
+      likes,
+      shares: Math.floor(views * 0.01),
+      comments,
+      growthRate: Math.floor(Math.random() * 25) + 5,
+    },
+    format: "long_video",
+    tags: tags.slice(0, 6),
+    country,
+    language,
+    emotion,
+    audienceOverlap: Math.floor(Math.random() * 25) + 60,
+    lifecycle: {
+      stage: (["rising", "peak", "declining"] as const)[Math.floor(Math.random() * 3)],
+      estimatedWindow: ["3-7天", "1-2周", "2-3周"][Math.floor(Math.random() * 3)],
+      crossPlatform: Math.random() > 0.7,
+      competitorDensity: (["low", "medium", "high"] as const)[Math.floor(Math.random() * 3)],
+    },
+    demographicAffinity: {
+      age_18_24: Math.random() * 0.4 + 0.3,
+      age_25_34: Math.random() * 0.3 + 0.2,
+      age_35_44: Math.random() * 0.2,
+      female: Math.random() * 0.5 + 0.3,
+      male: Math.random() * 0.5 + 0.3,
+    },
+    createdAt: video.snippet.publishedAt,
+  };
+}
+
+export async function GET(request: Request) {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "YOUTUBE_API_KEY not configured. Add it to .env.local" },
+      { status: 401 }
+    );
+  }
+
+  const { searchParams } = new URL(request.url);
+  const mode = searchParams.get("mode") || "search"; // search | trending
+  const regionCode = searchParams.get("region") || "US";
+  const country = regionCountryMap[regionCode] || "US";
+  const maxResults = Math.min(parseInt(searchParams.get("max") || "12", 10), 50);
+
+  try {
+    let items: ContentItem[] = [];
+
+    if (mode === "trending") {
+      const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=${regionCode}&maxResults=${maxResults}&videoCategoryId=0&key=${apiKey}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error((await res.json()).error?.message);
+      const data = await res.json();
+      items = (data.items || []).map((v: YouTubeVideoItem) => mapToContentItem(v, country));
+    } else {
+      // Search mode: query beverage-related content across multiple queries
+      const seen = new Set<string>();
+      const perQuery = Math.ceil(maxResults / beverageQueries.length);
+
+      for (const query of beverageQueries) {
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${perQuery}&regionCode=${regionCode}&relevanceLanguage=${countryLanguageMap[country] || "en"}&key=${apiKey}`;
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const data = await res.json();
+
+        const videoIds: string[] = (data.items || [])
+          .map((v: YouTubeVideoItem) => getVideoId(v))
+          .filter(Boolean);
+
+        if (videoIds.length > 0) {
+          // Batch get statistics
+          const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoIds.join(",")}&key=${apiKey}`;
+          const statsRes = await fetch(statsUrl);
+          if (statsRes.ok) {
+            const statsData = await statsRes.json();
+            for (const video of statsData.items || []) {
+              const vid = getVideoId(video);
+              if (!seen.has(vid)) {
+                seen.add(vid);
+                items.push(mapToContentItem(video, country));
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return NextResponse.json({
+      items: items.slice(0, maxResults),
+      mode,
+      region: regionCode,
+      total: Math.min(items.length, maxResults),
+      fetchedAt: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "YouTube API error" }, { status: 500 });
+  }
+}
