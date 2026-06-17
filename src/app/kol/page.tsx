@@ -25,7 +25,7 @@ function OverlapBadge({ score }: { score: number }) {
 }
 
 export default function KolPage() {
-  const { brandPreset, brandFilters } = useBrandPreset();
+  const { brandPreset, activeStrategy } = useBrandPreset();
 
   const [search, setSearch] = useState("");
   const [selPlatforms, setSelPlatforms] = useState<string[]>([]);
@@ -89,7 +89,7 @@ export default function KolPage() {
               </button>
             ))}
           </span>
-          {brandPreset && <span className="text-xs text-amber-400 font-medium ml-auto">◆ 品牌预设 · CHAGEE</span>}
+          {brandPreset && activeStrategy && <span className="text-xs text-amber-400 font-medium ml-auto">◆ {activeStrategy.name}</span>}
           <span className="text-xs text-slate-500 ml-auto">{filtered.length} 个结果</span>
         </div>
 

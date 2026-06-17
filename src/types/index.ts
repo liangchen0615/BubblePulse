@@ -129,6 +129,18 @@ export interface Brand {
   }[];
 }
 
+export interface BrandStrategy {
+  id: string;
+  name: string;
+  markets: Market[];
+  countries: Country[];
+  languages: Language[];
+  emotions: Emotion[];
+  ageMin: number;
+  ageMax: number;
+  gender: "female" | "male" | "all";
+}
+
 export interface CalendarEvent {
   id: string;
   date: string;

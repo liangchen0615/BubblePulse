@@ -57,7 +57,8 @@ const allLanguages = Object.keys(languageLabel) as Language[];
 const allEmotions = Object.keys(emotionLabel) as Emotion[];
 
 export default function TrendsPage() {
-  const { brandPreset, brandFilters } = useBrandPreset();
+  const { brandPreset, activeStrategy } = useBrandPreset();
+  const strategy = activeStrategy; // alias for cleaner access
 
   // Multi-select filter state
   const [selPlatforms, setSelPlatforms] = useState<string[]>([]);
@@ -86,20 +87,32 @@ export default function TrendsPage() {
   const [presetGlow, setPresetGlow] = useState<Set<string>>(new Set());
   const prevPresetRef = useRef(brandPreset);
 
-  // Sync brand preset
+  // Sync filter checkboxes with active strategy
   useEffect(() => {
-    if (brandPreset && !prevPresetRef.current) {
-      setSelCountries([]); setSelLanguages([]); setSelEmotions([]);
-      setSelGenders(brandFilters.gender === "all" ? [] : [brandFilters.gender]);
+    if (brandPreset && !prevPresetRef.current && activeStrategy) {
+      // Strategy activated: pre-check filter panel
+      setSelCountries([...activeStrategy.countries]);
+      setSelLanguages([...activeStrategy.languages]);
+      setSelEmotions([...activeStrategy.emotions]);
+      setSelGenders(activeStrategy.gender !== "all" ? [activeStrategy.gender] : []);
       setOverlapThreshold(0);
       setPresetGlow(new Set(["country", "language", "emotion", "gender"]));
+      // Auto-apply
+      setCommitted({
+        platforms: selPlatforms, lifecycle: selLifecycle, formats: selFormats, overlap: 0,
+        countries: [...activeStrategy.countries],
+        languages: [...activeStrategy.languages],
+        emotions: [...activeStrategy.emotions],
+        genders: activeStrategy.gender !== "all" ? [activeStrategy.gender] : [],
+      });
     } else if (!brandPreset && prevPresetRef.current) {
-      setSelPlatforms([]); setSelCountries([]); setSelLanguages([]); setSelEmotions([]);
-      setSelGenders([]); setSelLifecycle([]); setSelFormats([]); setOverlapThreshold(0);
+      setSelCountries([]); setSelLanguages([]); setSelEmotions([]);
+      setSelGenders([]); setOverlapThreshold(0);
       setPresetGlow(new Set());
+      setCommitted({ platforms: selPlatforms, countries: [], languages: [], emotions: [], genders: [], lifecycle: selLifecycle, formats: selFormats, overlap: 0 });
     }
     prevPresetRef.current = brandPreset;
-  }, [brandPreset, brandFilters]);
+  }, [brandPreset, activeStrategy]);
 
   // API fetch
   const fetchApiData = useCallback(async () => {
@@ -120,15 +133,15 @@ export default function TrendsPage() {
   const filtered = allTrends
     .filter((t) => committed.platforms.length === 0 || committed.platforms.includes(t.platform))
     .filter((t) => {
-      if (brandPreset && committed.countries.length === 0) return brandFilters.countries.includes(t.country);
+      if (brandPreset && committed.countries.length === 0) return (activeStrategy?.countries || []).includes(t.country);
       return committed.countries.length === 0 || committed.countries.includes(t.country);
     })
     .filter((t) => {
-      if (brandPreset && committed.languages.length === 0) return brandFilters.languages.includes(t.language);
+      if (brandPreset && committed.languages.length === 0) return activeStrategy?.languages.includes(t.language);
       return committed.languages.length === 0 || committed.languages.includes(t.language);
     })
     .filter((t) => {
-      if (brandPreset && committed.emotions.length === 0) return brandFilters.emotions.includes(t.emotion);
+      if (brandPreset && committed.emotions.length === 0) return activeStrategy?.emotions.includes(t.emotion);
       return committed.emotions.length === 0 || committed.emotions.includes(t.emotion);
     })
     .filter((t) => committed.genders.length === 0 || (
@@ -206,11 +219,11 @@ export default function TrendsPage() {
   ];
 
   // Active chips — include brand preset values when active
-  const brandChipGroups = brandPreset ? [
-    ...(committed.countries.length === 0 ? [{ key: "brand-country", label: "品牌·国家", activeValues: brandFilters.countries.slice(0, 3).map((c) => ({ value: c, label: countryLabel[c] })) }] : []),
-    ...(committed.languages.length === 0 ? [{ key: "brand-language", label: "品牌·语言", activeValues: brandFilters.languages.slice(0, 3).map((l) => ({ value: l, label: languageLabel[l] })) }] : []),
-    ...(committed.emotions.length === 0 ? [{ key: "brand-emotion", label: "品牌·情绪", activeValues: brandFilters.emotions.slice(0, 3).map((e) => ({ value: e, label: emotionLabel[e] })) }] : []),
-    ...(committed.genders.length === 0 && brandFilters.gender !== "all" ? [{ key: "brand-gender", label: "品牌·性别", activeValues: [{ value: brandFilters.gender, label: brandFilters.gender === "female" ? "女性为主" : "男性为主" }] }] : []),
+  const brandChipGroups = (brandPreset && activeStrategy) ? [
+    ...(committed.countries.length === 0 ? [{ key: "brand-country", label: "品牌·国家", activeValues: activeStrategy.countries.slice(0, 3).map((c: Country) => ({ value: c, label: countryLabel[c] })) }] : []),
+    ...(committed.languages.length === 0 ? [{ key: "brand-language", label: "品牌·语言", activeValues: activeStrategy.languages.slice(0, 3).map((l: Language) => ({ value: l, label: languageLabel[l] })) }] : []),
+    ...(committed.emotions.length === 0 ? [{ key: "brand-emotion", label: "品牌·情绪", activeValues: activeStrategy.emotions.slice(0, 3).map((e: Emotion) => ({ value: e, label: emotionLabel[e] })) }] : []),
+    ...(committed.genders.length === 0 && activeStrategy.gender !== "all" ? [{ key: "brand-gender", label: "品牌·性别", activeValues: [{ value: activeStrategy.gender, label: activeStrategy.gender === "female" ? "女性为主" : "男性为主" }] }] : []),
   ] : [];
   const chipGroups = [
     ...brandChipGroups,
@@ -268,12 +281,12 @@ export default function TrendsPage() {
 
           {brandPreset && (
             <div className="flex items-center gap-1.5 ml-auto">
-              <span className="text-xs text-amber-400 font-medium">◆ 品牌预设 · CHAGEE</span>
-              {brandFilters.markets.map((m) => (
+              <span className="text-xs text-amber-400 font-medium">◆ {activeStrategy?.name || "品牌预设"}</span>
+              {strategy?.markets.map((m) => (
                 <Badge key={m} variant="outline" className="text-xs border-amber-500/30 text-amber-400/80 bg-amber-500/5">{marketLabel[m]}</Badge>
               ))}
               <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400/80 bg-amber-500/5">
-                {brandFilters.ageMin}-{brandFilters.ageMax}岁
+                {activeStrategy?.ageMin}-{activeStrategy?.ageMax}岁
               </Badge>
             </div>
           )}
