@@ -148,13 +148,17 @@ export default function IpTrackerPage() {
         <Sheet open={!!selectedIp} onOpenChange={(open) => !open && setSelectedIp(null)}>
           <SheetContent className="w-[520px] sm:max-w-[520px] overflow-y-auto border-slate-700 bg-slate-900">
             {selectedIp && (() => {
+              const ipEvents = selectedIp.collabPrecedents.length > 0
+                ? selectedIp.collabPrecedents.map((p, j) => ({ day: 6 + j * 10, label: `${p.brand} ${p.description}`, boost: 15 + j * 3 }))
+                : [{ day: 8, label: "社交媒体热度上升", boost: 10 }, { day: 20, label: "粉丝二创传播", boost: 8 }];
               const trendData = Array.from({ length: 30 }, (_, i) => {
                 const base = selectedIp.heatScore;
-                const noise = Math.sin(i / 5) * 8 + Math.random() * 6 - 3;
-                const event = i === 8 ? 18 : i === 18 ? 15 : i === 24 ? 12 : 0;
-                const score = Math.max(0, Math.min(100, Math.round(base + noise + event)));
+                const noise = Math.sin(i / 5) * 5 + (Math.random() * 4 - 2);
+                const eventBoost = ipEvents.reduce((sum, ev) => sum + (i >= ev.day - 1 && i <= ev.day + 1 ? ev.boost * Math.max(0, 1 - Math.abs(i - ev.day) / 2) : 0), 0);
+                const score = Math.max(0, Math.min(100, Math.round(base + noise + eventBoost)));
                 const date = new Date(Date.now() - (29 - i) * 86400000);
-                return { day: `${date.getMonth() + 1}/${date.getDate()}`, score, isEvent: event > 0 };
+                const nearEvent = ipEvents.find((ev) => Math.abs(i - ev.day) <= 1);
+                return { day: `${date.getMonth() + 1}/${date.getDate()}`, score, label: nearEvent?.label || "" };
               });
               const avgScore = Math.round(trendData.reduce((s, d) => s + d.score, 0) / trendData.length);
               const pulseCount = trendData.filter((d) => d.score > avgScore + 10).length;
@@ -186,19 +190,19 @@ export default function IpTrackerPage() {
                       </ResponsiveContainer>
                     </div>
 
-                    {pulseCount > 0 && (
-                      <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                        <h4 className="text-sm font-medium text-slate-200 mb-2">脉冲事件（近30天）</h4>
-                        <div className="space-y-1.5">
-                          {trendData.filter((d) => d.score > avgScore + 10).slice(0, 3).map((d, i) => (
-                            <div key={i} className="flex items-center gap-2 text-xs">
-                              <span className="text-amber-400 font-mono">{d.day}</span>
-                              <span className="text-slate-400">热度 {d.score}（+{d.score - avgScore} vs 均值）</span>
-                            </div>
-                          ))}
-                        </div>
+                    <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+                      <h4 className="text-sm font-medium text-slate-200 mb-2">热度波动事件</h4>
+                      <div className="space-y-1.5">
+                        {ipEvents.map((ev, i) => (
+                          <div key={i} className="flex items-center gap-2 text-xs">
+                            <span className="text-amber-400 font-mono w-12">{trendData[ev.day]?.day || `D+${ev.day}`}</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                            <span className="text-slate-300">{ev.label}</span>
+                            <span className="text-emerald-400 ml-auto">+{ev.boost}热度</span>
+                          </div>
+                        ))}
                       </div>
-                    )}
+                    </div>
 
                     <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
                       <h4 className="text-sm font-medium text-amber-300 mb-1">联动建议</h4>

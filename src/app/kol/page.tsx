@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import type { KOL as KOLType } from "@/types";
 import { Users, Search, DollarSign, Star, BarChart3 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { Platform, ContentStyle, Country, Market } from "@/types";
 
 const platformLabel: Record<Platform, string> = { tiktok: "TikTok", instagram: "Instagram", youtube_shorts: "YT Shorts", youtube: "YouTube" };
@@ -243,29 +243,40 @@ export default function KolPage() {
                   )}
                   <Separator className="bg-slate-700" />
 
-                  {/* Follower growth chart */}
-                  {(() => {
-                    const growthData = Array.from({ length: 30 }, (_, i) => {
-                      const base = kol.followers * (0.85 + Math.random() * 0.03);
-                      const growth = Math.round(base * (1 + i * 0.005 + Math.sin(i / 7) * 0.01 + Math.random() * 0.005));
-                      return { day: `${i + 1}d`, followers: growth };
-                    });
-                    return (
-                      <div>
-                        <h4 className="text-sm font-medium text-slate-200 mb-2">粉丝增长趋势（30天）</h4>
-                        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-2">
-                          <ResponsiveContainer width="100%" height={120}>
-                            <AreaChart data={growthData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                              <defs><linearGradient id="kolGrowthGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10B981" stopOpacity={0.3} /><stop offset="100%" stopColor="#10B981" stopOpacity={0} /></linearGradient></defs>
-                              <XAxis dataKey="day" tick={{ fontSize: 9, fill: "#64748B" }} interval={6} axisLine={false} tickLine={false} />
-                              <Tooltip contentStyle={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "8px", fontSize: "12px", color: "#F8FAFC" }} formatter={(v) => [Number(v).toLocaleString(), "粉丝"]} />
-                              <Area type="monotone" dataKey="followers" stroke="#10B981" fill="url(#kolGrowthGrad)" strokeWidth={1.5} />
-                            </AreaChart>
-                          </ResponsiveContainer>
-                        </div>
+                  {/* Brand safety + content quality */}
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-200 mb-2">品牌适配评估</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(() => {
+                        const collabCount = kol.brandCollabHistory.length;
+                        const safetyScore = collabCount > 0 ? 85 + collabCount * 3 : 75;
+                        const qualityScore = Math.round(kol.avgEngagementRate * 15 + (kol.audienceOverlap / 10));
+                        const recentViral = kol.recentViralPosts && kol.recentViralPosts.length > 0 ? kol.recentViralPosts.length : 0;
+                        return (
+                          <>
+                            <div className="rounded-lg border border-slate-700 p-2 text-center">
+                              <div className={cn("text-sm font-bold", safetyScore >= 90 ? "text-emerald-400" : "text-amber-400")}>{safetyScore}</div>
+                              <div className="text-[10px] text-slate-500">品牌安全</div>
+                            </div>
+                            <div className="rounded-lg border border-slate-700 p-2 text-center">
+                              <div className="text-sm font-bold text-blue-400">{qualityScore}</div>
+                              <div className="text-[10px] text-slate-500">内容质量</div>
+                            </div>
+                            <div className="rounded-lg border border-slate-700 p-2 text-center">
+                              <div className={cn("text-sm font-bold", recentViral >= 2 ? "text-emerald-400" : "text-slate-400")}>{recentViral}条</div>
+                              <div className="text-[10px] text-slate-500">近期爆款</div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                    {kol.brandCollabHistory.length > 0 && (
+                      <div className="mt-2 rounded-lg border border-slate-700 bg-slate-800/50 p-2">
+                        <div className="text-[10px] text-slate-500 mb-1">合作品牌: {kol.brandCollabHistory.map((h) => h.brand).join(" · ")}</div>
+                        <div className="text-[10px] text-slate-500">最近合作: {kol.brandCollabHistory[kol.brandCollabHistory.length - 1]?.date}</div>
                       </div>
-                    );
-                  })()}
+                    )}
+                  </div>
 
                   <Separator className="bg-slate-700" />
 
