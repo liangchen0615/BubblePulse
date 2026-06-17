@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterSelect } from "@/components/ui/filter-select";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -136,53 +137,55 @@ export default function KolPage() {
               <span className="text-xs text-slate-600">—</span>
             </>
           )}
-          <Select value={selectedPlatform} onValueChange={(v) => setSelectedPlatform(v || "all")}>
-            <SelectTrigger className="w-28 h-7 text-xs">
-              <SelectValue placeholder="平台" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部平台</SelectItem>
-              <SelectItem value="tiktok">TikTok</SelectItem>
-              <SelectItem value="instagram">Instagram</SelectItem>
-              <SelectItem value="youtube">YouTube</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={style} onValueChange={(v) => setStyle(v || "all")}>
-            <SelectTrigger className="w-28 h-7 text-xs">
-              <SelectValue placeholder="风格" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部风格</SelectItem>
-              {(Object.keys(styleLabel) as ContentStyle[]).map((s) => (
-                <SelectItem key={s} value={s}>{styleLabel[s]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FilterSelect
+            label="平台"
+            value={selectedPlatform}
+            onValueChange={setSelectedPlatform}
+            options={[
+              { value: "all", label: "全部平台" },
+              { value: "tiktok", label: "TikTok" },
+              { value: "instagram", label: "Instagram" },
+              { value: "youtube", label: "YouTube" },
+            ]}
+          />
+          <FilterSelect
+            label="风格"
+            value={style}
+            onValueChange={setStyle}
+            options={[
+              { value: "all", label: "全部风格" },
+              ...(Object.keys(styleLabel) as ContentStyle[]).map((s) => ({
+                value: s,
+                label: styleLabel[s],
+              })),
+            ]}
+          />
           {!brandPreset && (
             <>
-              <Select value={region} onValueChange={(v) => { setRegion(v || "all"); setCountry("all"); }}>
-                <SelectTrigger className="w-24 h-7 text-xs">
-                  <SelectValue placeholder="区域" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部区域</SelectItem>
-                  <SelectItem value="US">北美</SelectItem>
-                  <SelectItem value="UK">欧洲</SelectItem>
-                  <SelectItem value="AU">澳洲</SelectItem>
-                  <SelectItem value="SEA">东南亚</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={country} onValueChange={(v) => setCountry(v || "all")}>
-                <SelectTrigger className="w-24 h-7 text-xs">
-                  <SelectValue placeholder="国家" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部国家</SelectItem>
-                  {(countriesForRegion || Object.keys(countryLabel) as Country[]).map((c) => (
-                    <SelectItem key={c} value={c}>{countryLabel[c]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FilterSelect
+                label="区域"
+                value={region}
+                onValueChange={(v) => { setRegion(v); setCountry("all"); }}
+                options={[
+                  { value: "all", label: "全部区域" },
+                  { value: "US", label: "北美" },
+                  { value: "UK", label: "欧洲" },
+                  { value: "AU", label: "澳洲" },
+                  { value: "SEA", label: "东南亚" },
+                ]}
+              />
+              <FilterSelect
+                label="国家"
+                value={country}
+                onValueChange={setCountry}
+                options={[
+                  { value: "all", label: "全部国家" },
+                  ...(countriesForRegion || Object.keys(countryLabel) as Country[]).map((c) => ({
+                    value: c,
+                    label: countryLabel[c],
+                  })),
+                ]}
+              />
             </>
           )}
         </div>

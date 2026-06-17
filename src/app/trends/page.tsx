@@ -9,6 +9,7 @@ import { Flame, TrendingUp, AlertTriangle, Link2, Users, Zap, SlidersHorizontal,
 import { trends as mockTrends, countryLabel, languageLabel, emotionLabel } from "@/lib/mock-data";
 import { useBrandPreset } from "@/lib/brand-context";
 import { cn } from "@/lib/utils";
+import { FilterSelect } from "@/components/ui/filter-select";
 import type { Platform, LifecycleStage, ContentFormat, Country, Language, Emotion, Market, ContentItem } from "@/types";
 
 function OverlapBadge({ score }: { score: number }) {
@@ -233,111 +234,107 @@ export default function TrendsPage() {
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-              {/* Platform — always free */}
-              <Select value={platform} onValueChange={(v) => setPlatform(v || "all")}>
-                <SelectTrigger className="w-28 h-7 text-xs">
-                  <SelectValue placeholder="平台" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部平台</SelectItem>
-                  <SelectItem value="tiktok">TikTok</SelectItem>
-                  <SelectItem value="instagram">Instagram</SelectItem>
-                  <SelectItem value="youtube_shorts">YT Shorts</SelectItem>
-                  <SelectItem value="youtube">YouTube</SelectItem>
-                </SelectContent>
-              </Select>
+              <FilterSelect
+                label="平台"
+                value={platform}
+                onValueChange={setPlatform}
+                options={[
+                  { value: "all", label: "全部平台" },
+                  { value: "tiktok", label: "TikTok" },
+                  { value: "instagram", label: "Instagram" },
+                  { value: "youtube_shorts", label: "YT Shorts" },
+                  { value: "youtube", label: "YouTube" },
+                ]}
+              />
 
               {!brandPreset && (
                 <>
-                  <Select value={region} onValueChange={(v) => { setRegion(v || "all"); setCountry("all"); }}>
-                    <SelectTrigger className="w-24 h-7 text-xs">
-                      <SelectValue placeholder="区域" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">全部区域</SelectItem>
-                      <SelectItem value="US">北美</SelectItem>
-                      <SelectItem value="UK">欧洲</SelectItem>
-                      <SelectItem value="AU">澳洲</SelectItem>
-                      <SelectItem value="SEA">东南亚</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={country} onValueChange={(v) => setCountry(v || "all")}>
-                    <SelectTrigger className="w-24 h-7 text-xs">
-                      <SelectValue placeholder="国家" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">全部国家</SelectItem>
-                      {(countriesForRegion || Object.keys(countryLabel) as Country[]).map((c) => (
-                        <SelectItem key={c} value={c}>{countryLabel[c]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={language} onValueChange={(v) => setLanguage(v || "all")}>
-                    <SelectTrigger className="w-24 h-7 text-xs">
-                      <SelectValue placeholder="语言" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">全部语言</SelectItem>
-                      {(Object.keys(languageLabel) as Language[]).map((l) => (
-                        <SelectItem key={l} value={l}>{languageLabel[l]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={emotion} onValueChange={(v) => setEmotion(v || "all")}>
-                    <SelectTrigger className="w-24 h-7 text-xs">
-                      <SelectValue placeholder="情绪" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">全部情绪</SelectItem>
-                      {(Object.keys(emotionLabel) as Emotion[]).map((e) => (
-                        <SelectItem key={e} value={e}>{emotionLabel[e]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={gender} onValueChange={(v) => setGender(v || "all")}>
-                    <SelectTrigger className="w-24 h-7 text-xs">
-                      <SelectValue placeholder="性别" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">全部性别</SelectItem>
-                      <SelectItem value="female">女性为主</SelectItem>
-                      <SelectItem value="male">男性为主</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FilterSelect
+                    label="区域"
+                    value={region}
+                    onValueChange={(v) => { setRegion(v); setCountry("all"); }}
+                    options={[
+                      { value: "all", label: "全部区域" },
+                      { value: "US", label: "北美" },
+                      { value: "UK", label: "欧洲" },
+                      { value: "AU", label: "澳洲" },
+                      { value: "SEA", label: "东南亚" },
+                    ]}
+                  />
+                  <FilterSelect
+                    label="国家"
+                    value={country}
+                    onValueChange={setCountry}
+                    options={[
+                      { value: "all", label: "全部国家" },
+                      ...(countriesForRegion || Object.keys(countryLabel) as Country[]).map((c) => ({
+                        value: c,
+                        label: countryLabel[c],
+                      })),
+                    ]}
+                  />
+                  <FilterSelect
+                    label="语言"
+                    value={language}
+                    onValueChange={setLanguage}
+                    options={[
+                      { value: "all", label: "全部语言" },
+                      ...(Object.keys(languageLabel) as Language[]).map((l) => ({
+                        value: l,
+                        label: languageLabel[l],
+                      })),
+                    ]}
+                  />
+                  <FilterSelect
+                    label="情绪"
+                    value={emotion}
+                    onValueChange={setEmotion}
+                    width="w-32"
+                    options={[
+                      { value: "all", label: "全部情绪" },
+                      ...(Object.keys(emotionLabel) as Emotion[]).map((e) => ({
+                        value: e,
+                        label: emotionLabel[e],
+                      })),
+                    ]}
+                  />
+                  <FilterSelect
+                    label="性别"
+                    value={gender}
+                    onValueChange={setGender}
+                    options={[
+                      { value: "all", label: "全部性别" },
+                      { value: "female", label: "女性为主" },
+                      { value: "male", label: "男性为主" },
+                    ]}
+                  />
                 </>
               )}
 
-              {/* Lifecycle — always free */}
-              <Select value={lifecycleStage} onValueChange={(v) => setLifecycleStage(v || "all")}>
-                <SelectTrigger className="w-24 h-7 text-xs">
-                  <SelectValue placeholder="阶段" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部阶段</SelectItem>
-                  <SelectItem value="rising">Rising</SelectItem>
-                  <SelectItem value="peak">Peak</SelectItem>
-                  <SelectItem value="declining">Declining</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Format — always free */}
-              <Select value={format} onValueChange={(v) => setFormat(v || "all")}>
-                <SelectTrigger className="w-24 h-7 text-xs">
-                  <SelectValue placeholder="格式" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部格式</SelectItem>
-                  <SelectItem value="hashtag">Hashtag</SelectItem>
-                  <SelectItem value="audio">Audio</SelectItem>
-                  <SelectItem value="challenge">Challenge</SelectItem>
-                  <SelectItem value="short_video">短视频</SelectItem>
-                  <SelectItem value="long_video">长视频</SelectItem>
-                </SelectContent>
-              </Select>
+              <FilterSelect
+                label="阶段"
+                value={lifecycleStage}
+                onValueChange={setLifecycleStage}
+                options={[
+                  { value: "all", label: "全部阶段" },
+                  { value: "rising", label: "Rising" },
+                  { value: "peak", label: "Peak" },
+                  { value: "declining", label: "Declining" },
+                ]}
+              />
+              <FilterSelect
+                label="格式"
+                value={format}
+                onValueChange={setFormat}
+                options={[
+                  { value: "all", label: "全部格式" },
+                  { value: "hashtag", label: "Hashtag" },
+                  { value: "audio", label: "Audio" },
+                  { value: "challenge", label: "Challenge" },
+                  { value: "short_video", label: "短视频" },
+                  { value: "long_video", label: "长视频" },
+                ]}
+              />
             </div>
 
             {/* Overlap threshold */}

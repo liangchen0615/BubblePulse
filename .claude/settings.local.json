@@ -17,7 +17,12 @@
       "Bash(git push *)",
       "Bash(curl -s \"http://localhost:3000/api/google/trending?region=US\")",
       "Bash(curl -s \"http://localhost:3000/api/reddit/trending?max=3\")",
-      "Bash(npx playwright *)"
+      "Bash(npx playwright *)",
+      "Bash(curl -s \"http://localhost:3000/api/youtube/trending?max=2\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'  cached: {d.get\\(\\\\\"cached\\\\\",False\\)}, items: {d[\\\\\"total\\\\\"]}'\\)\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'  cached: {d.get\\(\\\\\"cached\\\\\",False\\)}, items: {d.get\\(\\\\\"total\\\\\",0\\)}'\\)\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

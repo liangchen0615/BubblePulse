@@ -43,9 +43,9 @@ const countryLanguageMap: Record<Country, Language> = {
 };
 
 // Default: general trending. Pass ?mode=search&q=xxx for keyword search.
-// In-memory cache: 5 min TTL
+// In-memory cache: 24h TTL (daily update — save API quota)
 const cache = new Map<string, { data: any; expires: number }>();
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 24 * 60 * 60 * 1000;
 
 function guessEmotion(title: string): Emotion {
   const t = title.toLowerCase();

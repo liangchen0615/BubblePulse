@@ -43,11 +43,22 @@ function parseRSSItem(el: string): Record<string, string> {
   };
 }
 
+// In-memory cache: 24h TTL
+const cache = new Map<string, { data: any; expires: number }>();
+const CACHE_TTL = 24 * 60 * 60 * 1000;
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const region = searchParams.get("region") || "US";
   const geo = regionGeoMap[region] || "US";
   const country = geoCountryMap[geo] || "US";
+
+  // Check cache
+  const cacheKey = `goog:${geo}`;
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() < cached.expires) {
+    return NextResponse.json({ ...cached.data, cached: true });
+  }
 
   try {
     const url = `https://trends.google.com/trending/rss?geo=${geo}&hl=en-US&hours=24&sort=relevance`;
@@ -98,13 +109,15 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json({
+    const result = {
       items,
       region: geo,
       category: "All",
       total: items.length,
       fetchedAt: new Date().toISOString(),
-    });
+    };
+    cache.set(cacheKey, { data: result, expires: Date.now() + CACHE_TTL });
+    return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Google Trends error" }, { status: 500 });
   }
