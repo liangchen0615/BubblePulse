@@ -33,7 +33,7 @@ function guessEmotion(title: string): string {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const source = searchParams.get("source") || "mock"; // mock | youtube | google | merged
+  const source = searchParams.get("source") || "mock"; // mock | youtube | google | tiktok | merged
   const regionCode = searchParams.get("region") || "US";
   const max = Math.min(parseInt(searchParams.get("max") || "20", 10), 50);
 
@@ -113,20 +113,6 @@ export async function GET(request: Request) {
       }
     } catch {
       // Google Trends fetch failed
-    }
-  }
-
-  // Reddit data (public JSON API)
-  if (source === "merged") {
-    try {
-      const rdRes = await fetch(`http://localhost:3000/api/reddit/trending?max=${max}`);
-      if (rdRes.ok) {
-        const rdData = await rdRes.json();
-        items = [...items, ...rdData.items];
-        sources.push("reddit");
-      }
-    } catch {
-      // Reddit fetch failed
     }
   }
 

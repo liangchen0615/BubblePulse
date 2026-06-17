@@ -2,7 +2,22 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:skills.sh)",
-      "Bash(npx skills *)"
+      "Bash(npx skills *)",
+      "Bash(mv \"C:\\\\My Docs\\\\AGI_Chen\\\\Claude_WorkSpace\\\\PRD.md\" \"C:\\\\My Docs\\\\AGI_Chen\\\\Claude_WorkSpace\\\\bubblepulse/\")",
+      "Bash(mv \"C:\\\\My Docs\\\\AGI_Chen\\\\Claude_WorkSpace\\\\DESIGN.md\" \"C:\\\\My Docs\\\\AGI_Chen\\\\Claude_WorkSpace\\\\bubblepulse/\")",
+      "Bash(npm install *)",
+      "Bash(npx next *)",
+      "Bash(npx tsc *)",
+      "Bash(curl -s http://localhost:3000/trends)",
+      "Bash(curl -s \"http://localhost:3000/api/trends/all?source=merged&max=3\")",
+      "Bash(python -c ' *)",
+      "Bash(curl -s \"http://localhost:3000/api/trends/all?source=youtube&max=2\")",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/__TRACKED_VAR__)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(curl -s \"http://localhost:3000/api/google/trending?region=US\")",
+      "Bash(curl -s \"http://localhost:3000/api/reddit/trending?max=3\")",
+      "Bash(npx playwright *)"
     ]
   }
 }

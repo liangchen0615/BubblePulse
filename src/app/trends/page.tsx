@@ -180,7 +180,7 @@ export default function TrendsPage() {
           <span className="ml-auto flex items-center gap-2">
             {/* Data source toggle */}
             <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
-              {(["mock", "merged", "youtube"] as const).map((s) => (
+              {(["mock", "merged", "youtube", "google"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => {
@@ -194,7 +194,7 @@ export default function TrendsPage() {
                       : "text-slate-500 hover:text-slate-300"
                   )}
                 >
-                  {s === "mock" ? "离线" : s === "merged" ? "混合" : "YouTube"}
+                  {s === "mock" ? "离线" : s === "merged" ? "混合" : s === "youtube" ? "YT" : s === "google" ? "Google" : "TT"}
                 </button>
               ))}
             </span>
@@ -369,7 +369,13 @@ export default function TrendsPage() {
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-semibold text-slate-100">{trend.title}</h3>
                     {trend.id.startsWith("yt-") && (
-                      <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">● 实时</Badge>
+                      <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">● YT</Badge>
+                    )}
+                    {trend.id.startsWith("goog-") && (
+                      <Badge className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30">● Google</Badge>
+                    )}
+                    {trend.id.startsWith("tt-") && (
+                      <Badge className="text-xs bg-pink-500/20 text-pink-400 border-pink-500/30">● TT</Badge>
                     )}
                     <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{platformLabel[trend.platform]}</Badge>
                     <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{countryLabel[trend.country]}</Badge>
