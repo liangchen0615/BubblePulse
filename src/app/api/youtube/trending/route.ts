@@ -33,12 +33,12 @@ const beverageQueries = [
   "bubble tea recipe",
   "matcha latte tutorial",
   "tea ceremony japanese",
-  "boba shop tour",
-  "cafe aesthetic vlog",
-  "fruit tea making",
   "chinese tea culture",
-  "milk tea review",
 ];
+
+// In-memory cache: 5 min TTL
+const cache = new Map<string, { data: any; expires: number }>();
+const CACHE_TTL = 5 * 60 * 1000;
 
 function guessEmotion(title: string): Emotion {
   const t = title.toLowerCase();
@@ -112,60 +112,67 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const mode = searchParams.get("mode") || "search"; // search | trending
+  const mode = searchParams.get("mode") || "search";
   const regionCode = searchParams.get("region") || "US";
   const country = regionCountryMap[regionCode] || "US";
   const maxResults = Math.min(parseInt(searchParams.get("max") || "12", 10), 50);
+
+  // Check cache
+  const cacheKey = `yt:${mode}:${regionCode}:${maxResults}`;
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() < cached.expires) {
+    return NextResponse.json({ ...cached.data, cached: true });
+  }
 
   try {
     let items: ContentItem[] = [];
 
     if (mode === "trending") {
-      const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=${regionCode}&maxResults=${maxResults}&videoCategoryId=0&key=${apiKey}`;
+      const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=${regionCode}&maxResults=${maxResults}&key=${apiKey}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error((await res.json()).error?.message);
       const data = await res.json();
       items = (data.items || []).map((v: YouTubeVideoItem) => mapToContentItem(v, country));
     } else {
-      // Search mode: query beverage-related content across multiple queries
-      const seen = new Set<string>();
+      // Parallel search across all beverage queries
       const perQuery = Math.ceil(maxResults / beverageQueries.length);
 
-      for (const query of beverageQueries) {
-        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${perQuery}&regionCode=${regionCode}&relevanceLanguage=${countryLanguageMap[country] || "en"}&key=${apiKey}`;
-        const res = await fetch(url);
-        if (!res.ok) continue;
-        const data = await res.json();
+      const searchResults = await Promise.all(
+        beverageQueries.map(async (query) => {
+          const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${perQuery}&regionCode=${regionCode}&relevanceLanguage=${countryLanguageMap[country] || "en"}&key=${apiKey}`;
+          const res = await fetch(url);
+          if (!res.ok) return [];
+          const data = await res.json();
+          return (data.items || []).map((v: YouTubeVideoItem) => getVideoId(v)).filter(Boolean);
+        })
+      );
 
-        const videoIds: string[] = (data.items || [])
-          .map((v: YouTubeVideoItem) => getVideoId(v))
-          .filter(Boolean);
+      // Deduplicate and collect all video IDs
+      const allIds = [...new Set(searchResults.flat())];
 
-        if (videoIds.length > 0) {
-          // Batch get statistics
-          const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoIds.join(",")}&key=${apiKey}`;
-          const statsRes = await fetch(statsUrl);
-          if (statsRes.ok) {
-            const statsData = await statsRes.json();
-            for (const video of statsData.items || []) {
-              const vid = getVideoId(video);
-              if (!seen.has(vid)) {
-                seen.add(vid);
-                items.push(mapToContentItem(video, country));
-              }
-            }
-          }
+      if (allIds.length > 0) {
+        // Single batch stats fetch for ALL videos
+        const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${allIds.slice(0, 50).join(",")}&key=${apiKey}`;
+        const statsRes = await fetch(statsUrl);
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          items = (statsData.items || []).map((v: YouTubeVideoItem) => mapToContentItem(v, country));
         }
       }
     }
 
-    return NextResponse.json({
+    const result = {
       items: items.slice(0, maxResults),
       mode,
       region: regionCode,
       total: Math.min(items.length, maxResults),
       fetchedAt: new Date().toISOString(),
-    });
+    };
+
+    // Store in cache
+    cache.set(cacheKey, { data: result, expires: Date.now() + CACHE_TTL });
+
+    return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "YouTube API error" }, { status: 500 });
   }
