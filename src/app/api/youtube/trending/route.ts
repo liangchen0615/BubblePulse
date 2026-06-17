@@ -29,13 +29,7 @@ const countryLanguageMap: Record<Country, Language> = {
   FR: "fr", DE: "de", CN: "zh",
 };
 
-const beverageQueries = [
-  "bubble tea recipe",
-  "matcha latte tutorial",
-  "tea ceremony japanese",
-  "chinese tea culture",
-];
-
+// Default: general trending. Pass ?mode=search&q=xxx for keyword search.
 // In-memory cache: 5 min TTL
 const cache = new Map<string, { data: any; expires: number }>();
 const CACHE_TTL = 5 * 60 * 1000;
@@ -112,7 +106,7 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const mode = searchParams.get("mode") || "search";
+  const mode = searchParams.get("mode") || "trending"; // trending = general hot videos
   const regionCode = searchParams.get("region") || "US";
   const country = regionCountryMap[regionCode] || "US";
   const maxResults = Math.min(parseInt(searchParams.get("max") || "12", 10), 50);
@@ -127,38 +121,29 @@ export async function GET(request: Request) {
   try {
     let items: ContentItem[] = [];
 
-    if (mode === "trending") {
-      const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=${regionCode}&maxResults=${maxResults}&key=${apiKey}`;
+    if (mode === "search") {
+      // Keyword search via ?q= param
+      const query = searchParams.get("q") || "trending";
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${maxResults}&regionCode=${regionCode}&key=${apiKey}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error((await res.json()).error?.message);
       const data = await res.json();
-      items = (data.items || []).map((v: YouTubeVideoItem) => mapToContentItem(v, country));
-    } else {
-      // Parallel search across all beverage queries
-      const perQuery = Math.ceil(maxResults / beverageQueries.length);
-
-      const searchResults = await Promise.all(
-        beverageQueries.map(async (query) => {
-          const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${perQuery}&regionCode=${regionCode}&relevanceLanguage=${countryLanguageMap[country] || "en"}&key=${apiKey}`;
-          const res = await fetch(url);
-          if (!res.ok) return [];
-          const data = await res.json();
-          return (data.items || []).map((v: YouTubeVideoItem) => getVideoId(v)).filter(Boolean);
-        })
-      );
-
-      // Deduplicate and collect all video IDs
-      const allIds = [...new Set(searchResults.flat())];
-
-      if (allIds.length > 0) {
-        // Single batch stats fetch for ALL videos
-        const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${allIds.slice(0, 50).join(",")}&key=${apiKey}`;
+      const ids = (data.items || []).map((v: YouTubeVideoItem) => getVideoId(v)).filter(Boolean);
+      if (ids.length > 0) {
+        const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${ids.join(",")}&key=${apiKey}`;
         const statsRes = await fetch(statsUrl);
         if (statsRes.ok) {
           const statsData = await statsRes.json();
           items = (statsData.items || []).map((v: YouTubeVideoItem) => mapToContentItem(v, country));
         }
       }
+    } else {
+      // Trending: most popular videos in region
+      const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=${regionCode}&maxResults=${maxResults}&key=${apiKey}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error((await res.json()).error?.message);
+      const data = await res.json();
+      items = (data.items || []).map((v: YouTubeVideoItem) => mapToContentItem(v, country));
     }
 
     const result = {
@@ -169,9 +154,7 @@ export async function GET(request: Request) {
       fetchedAt: new Date().toISOString(),
     };
 
-    // Store in cache
     cache.set(cacheKey, { data: result, expires: Date.now() + CACHE_TTL });
-
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "YouTube API error" }, { status: 500 });

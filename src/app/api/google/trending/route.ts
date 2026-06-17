@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import type { ContentItem, Country, Language, Emotion } from "@/types";
 
 // Google Trends RSS feed — no API key needed
-// Categories: 5 = Food & Drink
-const CATEGORY_FOOD_DRINK = "5";
+// General trending topics (no category filter)
 
 const regionGeoMap: Record<string, string> = {
   US: "US", UK: "GB", AU: "AU", SG: "SG", JP: "JP", KR: "KR",
@@ -51,7 +50,7 @@ export async function GET(request: Request) {
   const country = geoCountryMap[geo] || "US";
 
   try {
-    const url = `https://trends.google.com/trending/rss?geo=${geo}&hl=en-US&hours=24&sort=relevance&cat=${CATEGORY_FOOD_DRINK}`;
+    const url = `https://trends.google.com/trending/rss?geo=${geo}&hl=en-US&hours=24&sort=relevance`;
     const res = await fetch(url, { headers: { "User-Agent": "BubblePulse/1.0" } });
     if (!res.ok) {
       return NextResponse.json({ error: `Google Trends returned ${res.status}` }, { status: res.status });
@@ -102,7 +101,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       items,
       region: geo,
-      category: "Food & Drink",
+      category: "All",
       total: items.length,
       fetchedAt: new Date().toISOString(),
     });
