@@ -86,11 +86,16 @@ export default function TrendsPage() {
   // Brand preset glow tracking
   const [presetGlow, setPresetGlow] = useState<Set<string>>(new Set());
   const prevPresetRef = useRef(brandPreset);
+  const prevStrategyRef = useRef(activeStrategy?.id);
 
   // Sync filter checkboxes with active strategy
   useEffect(() => {
-    if (brandPreset && !prevPresetRef.current && activeStrategy) {
-      // Strategy activated: pre-check filter panel
+    const strategyChanged = prevStrategyRef.current !== activeStrategy?.id;
+    const presetActivated = brandPreset && !prevPresetRef.current;
+    const presetDeactivated = !brandPreset && prevPresetRef.current;
+
+    if ((presetActivated || strategyChanged) && brandPreset && activeStrategy) {
+      // Strategy activated or switched: pre-check filter panel
       setSelCountries([...activeStrategy.countries]);
       setSelLanguages([...activeStrategy.languages]);
       setSelEmotions([...activeStrategy.emotions]);
@@ -105,13 +110,14 @@ export default function TrendsPage() {
         emotions: [...activeStrategy.emotions],
         genders: activeStrategy.gender !== "all" ? [activeStrategy.gender] : [],
       });
-    } else if (!brandPreset && prevPresetRef.current) {
+    } else if (presetDeactivated) {
       setSelCountries([]); setSelLanguages([]); setSelEmotions([]);
       setSelGenders([]); setOverlapThreshold(0);
       setPresetGlow(new Set());
       setCommitted({ platforms: selPlatforms, countries: [], languages: [], emotions: [], genders: [], lifecycle: selLifecycle, formats: selFormats, overlap: 0 });
     }
     prevPresetRef.current = brandPreset;
+    prevStrategyRef.current = activeStrategy?.id;
   }, [brandPreset, activeStrategy]);
 
   // API fetch

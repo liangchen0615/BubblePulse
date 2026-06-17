@@ -22,7 +22,10 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'  cached: {d.get\\(\\\\\"cached\\\\\",False\\)}, items: {d[\\\\\"total\\\\\"]}'\\)\")",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'  cached: {d.get\\(\\\\\"cached\\\\\",False\\)}, items: {d.get\\(\\\\\"total\\\\\",0\\)}'\\)\")",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(curl -s \"http://localhost:3000/brand/settings\")",
+      "Bash(curl -s \"http://localhost:3000/trends\")",
+      "Bash(start *)"
     ]
   }
 }
