@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FilterPanel, FilterChips, type FilterGroup } from "@/components/layout/filter-panel";
 import { useBrandPreset } from "@/lib/brand-context";
-import { ips } from "@/lib/mock-data";
+import { ips as mockIps } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import { Target, TrendingUp, TrendingDown, Minus, Zap, AlertCircle } from "lucide-react";
-import type { Feasibility, IpCategory } from "@/types";
+import { Target, TrendingUp, TrendingDown, Minus, Zap, AlertCircle, Loader2 } from "lucide-react";
+import type { Feasibility, IpCategory, IP } from "@/types";
 
 const categoryLabel: Record<IpCategory, string> = { anime: "Anime", game: "Game", movie: "Movie", character: "Character", meme: "Meme" };
 const allCategories: IpCategory[] = ["anime", "game", "movie", "character", "meme"];
@@ -33,9 +33,23 @@ export default function IpTrackerPage() {
   const { brandPreset, activeStrategy } = useBrandPreset();
   const [selCategories, setSelCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"overlap" | "heat">("overlap");
+  const [dataSource, setDataSource] = useState<"mock" | "merged" | "wikipedia">("mock");
+  const [apiData, setApiData] = useState<IP[]>([]);
+  const [apiLoading, setApiLoading] = useState(false);
   const [committed, setCommitted] = useState<string[]>([]);
 
-  const filtered = ips
+  const fetchIps = () => {
+    if (dataSource === "mock") { setApiData([]); return; }
+    setApiLoading(true);
+    fetch(`/api/ips/all?source=${dataSource}&max=8`)
+      .then((r) => r.json()).then((d) => { setApiData(d.items); setApiLoading(false); })
+      .catch(() => setApiLoading(false));
+  };
+  useEffect(() => { fetchIps(); }, [dataSource]);
+
+  const allIps = dataSource === "mock" ? mockIps : (apiData.length > 0 ? apiData : mockIps);
+
+  const filtered = allIps
     .filter((ip) => (brandPreset ? ip.audienceOverlap >= 55 : true))
     .filter((ip) => committed.length === 0 || committed.includes(ip.category))
     .sort((a, b) => sortBy === "overlap" ? b.audienceOverlap - a.audienceOverlap : b.heatScore - a.heatScore);
@@ -60,6 +74,16 @@ export default function IpTrackerPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          {/* Data source */}
+          <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
+            {(["mock", "merged", "wikipedia"] as const).map((s) => (
+              <button key={s} onClick={() => setDataSource(s)} className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", dataSource === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}>
+                {s === "mock" ? "离线" : s === "merged" ? "全网" : "Wiki"}
+              </button>
+            ))}
+          </span>
+          {apiLoading && <Loader2 className="h-3 w-3 animate-spin text-amber-500" />}
+
           <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
             {(["overlap", "heat"] as const).map((s) => (
               <button key={s} onClick={() => setSortBy(s)} className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", sortBy === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}>

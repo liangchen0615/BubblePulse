@@ -9,8 +9,10 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FilterPanel, FilterChips, type FilterGroup } from "@/components/layout/filter-panel";
 import { useBrandPreset } from "@/lib/brand-context";
-import { kols, countryLabel } from "@/lib/mock-data";
+import { kols as mockKols, countryLabel } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
+import type { KOL as KOLType } from "@/types";
 import { Users, Search, DollarSign, Star, BarChart3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { Platform, ContentStyle, Country, Market } from "@/types";
@@ -33,9 +35,24 @@ export default function KolPage() {
   const [selCountries, setSelCountries] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"overlap" | "fit">("overlap");
   const [selectedKol, setSelectedKol] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<"mock" | "merged" | "youtube">("mock");
+  const [apiData, setApiData] = useState<KOLType[]>([]);
+  const [apiLoading, setApiLoading] = useState(false);
 
   const [committed, setCommitted] = useState<{ platforms: string[]; styles: string[]; countries: string[] }>({ platforms: [], styles: [], countries: [] });
   const [presetGlow, setPresetGlow] = useState<Set<string>>(new Set());
+
+  // Fetch KOLs from API
+  const fetchKols = () => {
+    if (dataSource === "mock") { setApiData([]); return; }
+    setApiLoading(true);
+    fetch(`/api/kols/all?source=${dataSource}&max=10`)
+      .then((r) => r.json()).then((d) => { setApiData(d.items); setApiLoading(false); })
+      .catch(() => setApiLoading(false));
+  };
+  useEffect(() => { fetchKols(); }, [dataSource]);
+
+  const allKols = dataSource === "mock" ? mockKols : (apiData.length > 0 ? apiData : mockKols);
 
   // Sync strategy → filter panel
   const [prevStrategyRef] = useState(() => activeStrategy?.id);
@@ -54,7 +71,7 @@ export default function KolPage() {
   // Effective filter: strategy overrides when active
   const effCountries = brandPreset && activeStrategy ? activeStrategy.countries : committed.countries;
 
-  const filtered = kols
+  const filtered = allKols
     .filter((k) => committed.platforms.length === 0 || committed.platforms.includes(k.platform))
     .filter((k) => committed.styles.length === 0 || k.contentStyleTags.some((s) => committed.styles.includes(s)))
     .filter((k) => effCountries.length === 0 || effCountries.includes(k.audienceProfile.region as any))
@@ -62,7 +79,7 @@ export default function KolPage() {
     .sort((a, b) => sortBy === "overlap" ? b.audienceOverlap - a.audienceOverlap : b.brandFitScore - a.brandFitScore);
 
   const activeCount = committed.platforms.length + committed.styles.length + committed.countries.length;
-  const kol = kols.find((k) => k.id === selectedKol);
+  const kol = allKols.find((k) => k.id === selectedKol);
 
   const matchKOLStrategy = (c: typeof committed): string | null => {
     const arrEq = (a: string[], b: string[]) => a.length === b.length && a.every((v) => b.includes(v));
@@ -114,6 +131,16 @@ export default function KolPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
             <Input placeholder="搜索 KOL..." className="pl-9 h-8 text-sm border-slate-700 bg-slate-800/50" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
+          {/* Data source */}
+          <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
+            {(["mock", "merged", "youtube"] as const).map((s) => (
+              <button key={s} onClick={() => setDataSource(s)} className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", dataSource === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}>
+                {s === "mock" ? "离线" : s === "merged" ? "全网" : "YT"}
+              </button>
+            ))}
+          </span>
+          {apiLoading && <Loader2 className="h-3 w-3 animate-spin text-amber-500" />}
+
           <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
             {(["overlap", "fit"] as const).map((s) => (
               <button key={s} onClick={() => setSortBy(s)} className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", sortBy === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}>
