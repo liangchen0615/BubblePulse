@@ -130,9 +130,9 @@ export default function TrendsPage() {
       else setApiError(true);
     } catch { setApiError(true); }
     finally { setApiLoading(false); }
-  }, [dataSource]);
+  }, [dataSource, period]);
 
-  useEffect(() => { fetchApiData(); }, [dataSource, period, fetchApiData]);
+  useEffect(() => { fetchApiData(); }, [fetchApiData]);
 
   const allTrends = apiData.length > 0 ? apiData : mockTrends;
 
