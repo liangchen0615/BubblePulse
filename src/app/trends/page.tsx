@@ -57,8 +57,8 @@ const allLanguages = Object.keys(languageLabel) as Language[];
 const allEmotions = Object.keys(emotionLabel) as Emotion[];
 
 export default function TrendsPage() {
-  const { brandPreset, activeStrategy } = useBrandPreset();
-  const strategy = activeStrategy; // alias for cleaner access
+  const { brandPreset, activeStrategy, strategies, setActiveStrategy } = useBrandPreset();
+  const strategy = activeStrategy;
 
   // Multi-select filter state
   const [selPlatforms, setSelPlatforms] = useState<string[]>([]);
@@ -172,6 +172,49 @@ export default function TrendsPage() {
       formats: selFormats, overlap: overlapThreshold,
     });
   };
+
+  // Check if committed filters match a strategy (subset = still within strategy)
+  const isSubset = (committedVals: string[], strategyVals: string[]) =>
+    committedVals.length === 0 || committedVals.every((v) => strategyVals.includes(v));
+
+  useEffect(() => {
+    if (!brandPreset) return;
+    // Only check brand-relevant dimensions
+    const c = committed;
+    const hasAnyBrandFilter = c.countries.length > 0 || c.languages.length > 0 || c.emotions.length > 0 || c.genders.length > 0;
+    if (!hasAnyBrandFilter) return;
+
+    // Check if still matches active strategy
+    if (activeStrategy) {
+      const matches = isSubset(c.countries, activeStrategy.countries) &&
+        isSubset(c.languages, activeStrategy.languages) &&
+        isSubset(c.emotions, activeStrategy.emotions) &&
+        isSubset(c.genders, activeStrategy.gender === "all" ? ["female", "male"] : [activeStrategy.gender]);
+      if (!matches) {
+        // Deviated from active strategy — check if matches another
+        const otherMatch = strategies.find((s) => s.id !== activeStrategy.id &&
+          isSubset(c.countries, s.countries) &&
+          isSubset(c.languages, s.languages) &&
+          isSubset(c.emotions, s.emotions) &&
+          isSubset(c.genders, s.gender === "all" ? ["female", "male"] : [s.gender])
+        );
+        if (otherMatch) {
+          setActiveStrategy(otherMatch.id);
+        } else {
+          setActiveStrategy(null); // Free mode
+        }
+      }
+    } else {
+      // No active strategy — check if filters match any strategy
+      const match = strategies.find((s) =>
+        isSubset(c.countries, s.countries) &&
+        isSubset(c.languages, s.languages) &&
+        isSubset(c.emotions, s.emotions) &&
+        isSubset(c.genders, s.gender === "all" ? ["female", "male"] : [s.gender])
+      );
+      if (match) setActiveStrategy(match.id);
+    }
+  }, [committed, brandPreset, activeStrategy, strategies, setActiveStrategy]);
 
   // Reset
   const resetFilters = () => {
