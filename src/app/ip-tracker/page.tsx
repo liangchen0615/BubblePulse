@@ -8,7 +8,9 @@ import { FilterPanel, FilterChips, type FilterGroup } from "@/components/layout/
 import { useBrandPreset } from "@/lib/brand-context";
 import { ips as mockIps } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Target, TrendingUp, TrendingDown, Minus, Zap, AlertCircle, Loader2 } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import type { Feasibility, IpCategory, IP } from "@/types";
 
 const categoryLabel: Record<IpCategory, string> = { anime: "Anime", game: "Game", movie: "Movie", character: "Character", meme: "Meme" };
@@ -36,6 +38,7 @@ export default function IpTrackerPage() {
   const [dataSource, setDataSource] = useState<"mock" | "merged" | "wikipedia">("mock");
   const [apiData, setApiData] = useState<IP[]>([]);
   const [apiLoading, setApiLoading] = useState(false);
+  const [selectedIp, setSelectedIp] = useState<IP | null>(null);
   const [committed, setCommitted] = useState<string[]>([]);
 
   const fetchIps = () => {
@@ -102,7 +105,7 @@ export default function IpTrackerPage() {
             const isOpportunity = ip.feasibility === "high" && !ip.competitorOccupied;
             const isCrowded = ip.feasibility !== "low" && ip.competitorOccupied;
             return (
-              <Card key={ip.id} className={cn("border-slate-700 bg-slate-800/50 hover:border-amber-500/20 transition-colors", isOpportunity && "border-l-2 border-l-emerald-500", isCrowded && "border-l-2 border-l-amber-500")}>
+              <Card key={ip.id} className={cn("border-slate-700 bg-slate-800/50 hover:border-amber-500/20 transition-colors cursor-pointer", isOpportunity && "border-l-2 border-l-emerald-500", isCrowded && "border-l-2 border-l-amber-500")} onClick={() => setSelectedIp(ip)}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-700"><Target className="h-7 w-7 text-amber-500/50" /></div>
@@ -140,6 +143,77 @@ export default function IpTrackerPage() {
             );
           })}
         </div>
+
+        {/* IP Detail Sheet */}
+        <Sheet open={!!selectedIp} onOpenChange={(open) => !open && setSelectedIp(null)}>
+          <SheetContent className="w-[520px] sm:max-w-[520px] overflow-y-auto border-slate-700 bg-slate-900">
+            {selectedIp && (() => {
+              const trendData = Array.from({ length: 30 }, (_, i) => {
+                const base = selectedIp.heatScore;
+                const noise = Math.sin(i / 5) * 8 + Math.random() * 6 - 3;
+                const event = i === 8 ? 18 : i === 18 ? 15 : i === 24 ? 12 : 0;
+                const score = Math.max(0, Math.min(100, Math.round(base + noise + event)));
+                const date = new Date(Date.now() - (29 - i) * 86400000);
+                return { day: `${date.getMonth() + 1}/${date.getDate()}`, score, isEvent: event > 0 };
+              });
+              const avgScore = Math.round(trendData.reduce((s, d) => s + d.score, 0) / trendData.length);
+              const pulseCount = trendData.filter((d) => d.score > avgScore + 10).length;
+              const pulseFreq = pulseCount >= 8 ? "高频" : pulseCount >= 4 ? "中频" : "低频";
+
+              return (
+                <>
+                  <SheetHeader>
+                    <SheetTitle className="text-slate-50 text-lg">{selectedIp.name}</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6 space-y-4">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="rounded-lg border border-slate-700 p-3 text-center"><div className="text-lg font-bold text-amber-400">{selectedIp.heatScore}</div><div className="text-xs text-slate-500">当前热度</div></div>
+                      <div className="rounded-lg border border-slate-700 p-3 text-center"><div className="text-lg font-bold text-slate-100">{avgScore}</div><div className="text-xs text-slate-500">30天均值</div></div>
+                      <div className="rounded-lg border border-slate-700 p-3 text-center"><div className={cn("text-lg font-bold", pulseFreq === "高频" ? "text-emerald-400" : pulseFreq === "中频" ? "text-amber-400" : "text-slate-400")}>{pulseFreq}</div><div className="text-xs text-slate-500">脉冲频率</div></div>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+                      <h4 className="text-sm font-medium text-slate-200 mb-3">30天热度趋势</h4>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <AreaChart data={trendData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                          <defs><linearGradient id="ipHeatGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#F59E0B" stopOpacity={0.3} /><stop offset="100%" stopColor="#F59E0B" stopOpacity={0} /></linearGradient></defs>
+                          <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#64748B" }} interval={4} axisLine={false} tickLine={false} />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#64748B" }} axisLine={false} tickLine={false} />
+                          <Tooltip contentStyle={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "8px", fontSize: "12px", color: "#F8FAFC" }} />
+                          <ReferenceLine y={avgScore} stroke="#475569" strokeDasharray="4 4" label={{ value: `均值 ${avgScore}`, position: "right", fontSize: 10, fill: "#64748B" }} />
+                          <Area type="monotone" dataKey="score" stroke="#F59E0B" fill="url(#ipHeatGrad)" strokeWidth={2} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {pulseCount > 0 && (
+                      <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+                        <h4 className="text-sm font-medium text-slate-200 mb-2">脉冲事件（近30天）</h4>
+                        <div className="space-y-1.5">
+                          {trendData.filter((d) => d.score > avgScore + 10).slice(0, 3).map((d, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs">
+                              <span className="text-amber-400 font-mono">{d.day}</span>
+                              <span className="text-slate-400">热度 {d.score}（+{d.score - avgScore} vs 均值）</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+                      <h4 className="text-sm font-medium text-amber-300 mb-1">联动建议</h4>
+                      <p className="text-xs text-slate-400">
+                        {pulseFreq === "高频" ? "该IP持续高热，适合随时启动联动。关注大版本/事件窗口以获得最大曝光。" :
+                         pulseFreq === "中频" ? "该IP有周期性热度，建议在脉冲事件前后2周内启动联动。" :
+                         "该IP热度偏低，建议观望等待下一个脉冲窗口。"}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </SheetContent>
+        </Sheet>
       </div>
     </FilterPanel>
   );

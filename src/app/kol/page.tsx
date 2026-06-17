@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import type { KOL as KOLType } from "@/types";
 import { Users, Search, DollarSign, Star, BarChart3 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import type { Platform, ContentStyle, Country, Market } from "@/types";
 
 const platformLabel: Record<Platform, string> = { tiktok: "TikTok", instagram: "Instagram", youtube_shorts: "YT Shorts", youtube: "YouTube" };
@@ -241,6 +241,65 @@ export default function KolPage() {
                       </div>
                     </>
                   )}
+                  <Separator className="bg-slate-700" />
+
+                  {/* Follower growth chart */}
+                  {(() => {
+                    const growthData = Array.from({ length: 30 }, (_, i) => {
+                      const base = kol.followers * (0.85 + Math.random() * 0.03);
+                      const growth = Math.round(base * (1 + i * 0.005 + Math.sin(i / 7) * 0.01 + Math.random() * 0.005));
+                      return { day: `${i + 1}d`, followers: growth };
+                    });
+                    return (
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-200 mb-2">粉丝增长趋势（30天）</h4>
+                        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-2">
+                          <ResponsiveContainer width="100%" height={120}>
+                            <AreaChart data={growthData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                              <defs><linearGradient id="kolGrowthGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10B981" stopOpacity={0.3} /><stop offset="100%" stopColor="#10B981" stopOpacity={0} /></linearGradient></defs>
+                              <XAxis dataKey="day" tick={{ fontSize: 9, fill: "#64748B" }} interval={6} axisLine={false} tickLine={false} />
+                              <Tooltip contentStyle={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "8px", fontSize: "12px", color: "#F8FAFC" }} formatter={(v) => [Number(v).toLocaleString(), "粉丝"]} />
+                              <Area type="monotone" dataKey="followers" stroke="#10B981" fill="url(#kolGrowthGrad)" strokeWidth={1.5} />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <Separator className="bg-slate-700" />
+
+                  {/* ROI metrics */}
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-200 mb-2">ROI 预估</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(() => {
+                        const avgCost = (kol.estimatedCostRange.min + kol.estimatedCostRange.max) / 2;
+                        const estExposure = kol.followers * 0.15;
+                        const cpm = Math.round(avgCost / (estExposure / 1000));
+                        const estEngagement = Math.round(kol.followers * kol.avgEngagementRate / 100);
+                        const engagementROI = (estEngagement / avgCost).toFixed(2);
+                        const matchPremium = (kol.audienceOverlap * kol.avgEngagementRate / Math.max(cpm, 1)).toFixed(1);
+                        return (
+                          <>
+                            <div className="rounded-lg border border-slate-700 p-2 text-center">
+                              <div className="text-sm font-bold text-amber-400">${cpm}</div>
+                              <div className="text-[10px] text-slate-500">CPM</div>
+                            </div>
+                            <div className="rounded-lg border border-slate-700 p-2 text-center">
+                              <div className="text-sm font-bold text-emerald-400">{engagementROI}</div>
+                              <div className="text-[10px] text-slate-500">互动ROI</div>
+                            </div>
+                            <div className="rounded-lg border border-slate-700 p-2 text-center">
+                              <div className="text-sm font-bold text-blue-400">{matchPremium}</div>
+                              <div className="text-[10px] text-slate-500">匹配溢价</div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
                   <Separator className="bg-slate-700" />
                   <div><h4 className="text-sm font-medium text-slate-200 mb-2">预估合作费用</h4><p className="text-lg font-bold text-slate-100">${kol.estimatedCostRange.min.toLocaleString()} - ${kol.estimatedCostRange.max.toLocaleString()}/条</p></div>
                   <div className="flex gap-2 pt-2"><Button className="flex-1 gap-1 bg-amber-500 text-black hover:bg-amber-400"><Star className="h-4 w-4" /> 收藏到品牌KOL库</Button><Button variant="outline" className="gap-1 border-slate-700 text-slate-300">导出报告</Button></div>
