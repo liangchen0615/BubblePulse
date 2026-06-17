@@ -29,6 +29,7 @@ export interface ContentMetrics {
   shares: number;
   comments: number;
   growthRate: number;
+  heatScore: number;
 }
 
 export interface DemographicAffinity {

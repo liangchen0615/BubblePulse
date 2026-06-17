@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { ContentItem, Country, Language, Emotion } from "@/types";
+import { calcHeatScore, calcGrowthRate } from "@/lib/heat-score";
 
 // Google Trends RSS feed — no API key needed
 // General trending topics (no category filter)
@@ -84,7 +85,7 @@ export async function GET(request: Request) {
           likes: Math.floor(traffic * 0.3),
           shares: Math.floor(traffic * 0.05),
           comments: Math.floor(traffic * 0.02),
-          growthRate: Math.floor(Math.random() * 30) + 10,
+          growthRate: 0, heatScore: 0,
         },
         format: "hashtag",
         tags: ["GoogleTrends", "trending", "food_drink"],
@@ -109,6 +110,10 @@ export async function GET(request: Request) {
       };
     });
 
+    for (const item of items) {
+      item.metrics.growthRate = calcGrowthRate(item);
+      item.metrics.heatScore = calcHeatScore(item);
+    }
     const result = {
       items,
       region: geo,

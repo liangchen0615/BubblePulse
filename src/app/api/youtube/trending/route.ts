@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { ContentItem, Platform, Language, Emotion, Country } from "@/types";
+import { calcHeatScore, calcGrowthRate } from "@/lib/heat-score";
 
 interface YouTubeVideoItem {
   id: string | { videoId: string };
@@ -141,7 +142,7 @@ function mapToContentItem(video: YouTubeVideoItem, country: Country): ContentIte
     description: video.snippet.description?.slice(0, 200) || "",
     thumbnailUrl: video.snippet.thumbnails?.maxres?.url || video.snippet.thumbnails?.high?.url || "",
     url: `https://youtube.com/watch?v=${videoId}`,
-    metrics: { views, likes, shares: Math.floor(views * 0.01), comments, growthRate: 0 },
+    metrics: { views, likes, shares: Math.floor(views * 0.01), comments, growthRate: 0, heatScore: 0 },
     format,
     tags: allTags.slice(0, 8),
     country,
@@ -201,6 +202,12 @@ export async function GET(request: Request) {
       if (!res.ok) throw new Error((await res.json()).error?.message);
       const data = await res.json();
       items = (data.items || []).map((v: YouTubeVideoItem) => mapToContentItem(v, country));
+    }
+
+    // Compute heat scores and real growth rates
+    for (const item of items) {
+      item.metrics.growthRate = calcGrowthRate(item);
+      item.metrics.heatScore = calcHeatScore(item);
     }
 
     const result = {

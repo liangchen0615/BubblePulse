@@ -78,6 +78,7 @@ export default function TrendsPage() {
 
   // Data source
   const [dataSource, setDataSource] = useState<"merged" | "youtube" | "google">("merged");
+  const [period, setPeriod] = useState<"day" | "week" | "month">("day");
   const [apiData, setApiData] = useState<ContentItem[]>([]);
   const [apiLoading, setApiLoading] = useState(false);
   const [apiError, setApiError] = useState(false);
@@ -124,7 +125,7 @@ export default function TrendsPage() {
   const fetchApiData = useCallback(async () => {
     setApiLoading(true); setApiError(false);
     try {
-      const res = await fetch(`/api/trends/all?source=${dataSource}&max=20`);
+      const res = await fetch(`/api/trends/all?source=${dataSource}&max=50`);
       if (res.ok) { const json = await res.json(); setApiData(json.items); setApiSources(json.sources); }
       else setApiError(true);
     } catch { setApiError(true); }
@@ -157,7 +158,7 @@ export default function TrendsPage() {
     .filter((t) => committed.lifecycle.length === 0 || committed.lifecycle.includes(t.lifecycle.stage))
     .filter((t) => committed.formats.length === 0 || committed.formats.includes(t.format))
     .filter((t) => t.audienceOverlap >= committed.overlap)
-    .sort((a, b) => b.metrics.views - a.metrics.views);
+    .sort((a, b) => b.metrics.heatScore - a.metrics.heatScore);
 
   // Active filter count
   const activeCount = committed.platforms.length + committed.countries.length + committed.languages.length +
@@ -279,6 +280,19 @@ export default function TrendsPage() {
 
         {/* Toolbar: data source + brand preset status */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Period toggle */}
+          <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
+            {(["day", "week", "month"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", period === p ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}
+              >
+                {p === "day" ? "日" : p === "week" ? "周" : "月"}
+              </button>
+            ))}
+          </span>
+
           {/* Data source toggle */}
           <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
             {(["merged", "youtube", "google"] as const).map((s) => (
