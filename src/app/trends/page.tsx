@@ -125,14 +125,14 @@ export default function TrendsPage() {
   const fetchApiData = useCallback(async () => {
     setApiLoading(true); setApiError(false);
     try {
-      const res = await fetch(`/api/trends/all?source=${dataSource}&max=50`);
+      const res = await fetch(`/api/trends/all?source=${dataSource}&period=${period}&max=50`);
       if (res.ok) { const json = await res.json(); setApiData(json.items); setApiSources(json.sources); }
       else setApiError(true);
     } catch { setApiError(true); }
     finally { setApiLoading(false); }
   }, [dataSource]);
 
-  useEffect(() => { fetchApiData(); }, [dataSource, fetchApiData]);
+  useEffect(() => { fetchApiData(); }, [dataSource, period, fetchApiData]);
 
   const allTrends = apiData.length > 0 ? apiData : mockTrends;
 

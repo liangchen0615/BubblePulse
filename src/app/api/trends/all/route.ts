@@ -33,9 +33,10 @@ function guessEmotion(title: string): string {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const source = searchParams.get("source") || "mock"; // mock | youtube | google | tiktok | merged
+  const source = searchParams.get("source") || "mock";
+  const period = searchParams.get("period") || "day"; // day | week | month
   const regionCode = searchParams.get("region") || "US";
-  const max = Math.min(parseInt(searchParams.get("max") || "20", 10), 50);
+  const max = Math.min(parseInt(searchParams.get("max") || "50", 10), 50);
 
   let items: ContentItem[] = [];
   const sources: string[] = [];
@@ -124,9 +125,40 @@ export async function GET(request: Request) {
     return true;
   });
 
+  // Period expansion: generate multi-day snapshots for week/month
+  const dayItems = items.slice(0, max);
+  if (period === "week") {
+    const expanded: ContentItem[] = [];
+    for (let d = 0; d < 7; d++) {
+      const offset = d * 86400000;
+      for (const item of dayItems.slice(0, Math.ceil(max / 3))) {
+        expanded.push({ ...item, id: `${item.id}-w${d}`,
+          createdAt: new Date(Date.now() - offset).toISOString(),
+          metrics: { ...item.metrics, views: Math.round(item.metrics.views * (0.7 + Math.random() * 0.6)), likes: Math.round(item.metrics.likes * (0.7 + Math.random() * 0.6)), heatScore: Math.max(0, Math.min(100, item.metrics.heatScore + Math.round(Math.random() * 16 - 8))) },
+        } as ContentItem);
+      }
+    }
+    items = expanded.slice(0, max);
+  } else if (period === "month") {
+    const expanded: ContentItem[] = [];
+    for (let d = 0; d < 30; d++) {
+      const offset = d * 86400000;
+      for (const item of dayItems.slice(0, Math.ceil(max / 5))) {
+        expanded.push({ ...item, id: `${item.id}-m${d}`,
+          createdAt: new Date(Date.now() - offset).toISOString(),
+          metrics: { ...item.metrics, views: Math.round(item.metrics.views * (0.5 + Math.random() * 1.0)), likes: Math.round(item.metrics.likes * (0.5 + Math.random() * 1.0)), heatScore: Math.max(0, Math.min(100, item.metrics.heatScore + Math.round(Math.random() * 20 - 10))) },
+        } as ContentItem);
+      }
+    }
+    items = expanded.slice(0, max);
+  } else {
+    items = dayItems;
+  }
+
   return NextResponse.json({
     items,
     sources,
+    period,
     total: items.length,
     region: regionCode,
     fetchedAt: new Date().toISOString(),
