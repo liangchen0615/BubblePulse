@@ -205,8 +205,15 @@ export default function TrendsPage() {
       onChange: (v) => setSelFormats(v.filter((x) => x !== "all")) },
   ];
 
-  // Active chips
+  // Active chips — include brand preset values when active
+  const brandChipGroups = brandPreset ? [
+    ...(committed.countries.length === 0 ? [{ key: "brand-country", label: "品牌·国家", activeValues: brandFilters.countries.slice(0, 3).map((c) => ({ value: c, label: countryLabel[c] })) }] : []),
+    ...(committed.languages.length === 0 ? [{ key: "brand-language", label: "品牌·语言", activeValues: brandFilters.languages.slice(0, 3).map((l) => ({ value: l, label: languageLabel[l] })) }] : []),
+    ...(committed.emotions.length === 0 ? [{ key: "brand-emotion", label: "品牌·情绪", activeValues: brandFilters.emotions.slice(0, 3).map((e) => ({ value: e, label: emotionLabel[e] })) }] : []),
+    ...(committed.genders.length === 0 && brandFilters.gender !== "all" ? [{ key: "brand-gender", label: "品牌·性别", activeValues: [{ value: brandFilters.gender, label: brandFilters.gender === "female" ? "女性为主" : "男性为主" }] }] : []),
+  ] : [];
   const chipGroups = [
+    ...brandChipGroups,
     { key: "platform", label: "平台", activeValues: committed.platforms.map((v) => ({ value: v, label: platformLabel[v] || v })) },
     { key: "country", label: "国家", activeValues: committed.countries.map((v) => ({ value: v, label: countryLabel[v as Country] || v })) },
     { key: "language", label: "语言", activeValues: committed.languages.map((v) => ({ value: v, label: languageLabel[v as Language] || v })) },
@@ -226,12 +233,12 @@ export default function TrendsPage() {
       onReset={resetFilters}
       activeCount={activeCount}
     >
-      <div className="space-y-6 max-w-4xl">
+      <div className="space-y-4">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-slate-50">实时热点</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            按受众重合度排序。点击右侧面板筛选 · 地理位置 · 语言 · 情绪 · 人群。
+          <p className="mt-0.5 text-sm text-slate-400">
+            按受众重合度排序。右侧面板筛选 · 品牌预设自动匹配。
           </p>
         </div>
 

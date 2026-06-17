@@ -36,7 +36,7 @@ export function FilterPanel({
   activeCount,
   children,
 }: FilterPanelProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   const toggleGroup = (group: FilterGroup, value: string) => {
     const current = new Set(group.selected);
@@ -174,13 +174,25 @@ export function FilterChips({
   onClearAll: () => void;
 }) {
   const allChips = groups.flatMap((g) =>
-    g.activeValues.map((v) => ({ groupKey: g.key, groupLabel: g.label, ...v }))
+    g.activeValues.map((v) => ({ groupKey: g.key, groupLabel: g.label, isBrand: g.key.startsWith("brand-"), ...v }))
   );
   if (allChips.length === 0) return null;
 
+  const userChips = allChips.filter((c) => !c.isBrand);
+  const brandChips = allChips.filter((c) => c.isBrand);
+
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {allChips.map((chip) => (
+      {brandChips.map((chip) => (
+        <Badge
+          key={`${chip.groupKey}-${chip.value}`}
+          variant="outline"
+          className="gap-1 border-amber-500/30 bg-amber-500/5 text-amber-300 text-xs"
+        >
+          <span className="text-amber-500/70">{chip.groupLabel.replace("品牌·", "")}:</span> {chip.label}
+        </Badge>
+      ))}
+      {userChips.map((chip) => (
         <Badge
           key={`${chip.groupKey}-${chip.value}`}
           variant="secondary"
@@ -195,9 +207,11 @@ export function FilterChips({
           </button>
         </Badge>
       ))}
-      <button onClick={onClearAll} className="text-xs text-slate-500 hover:text-slate-300">
-        清除全部
-      </button>
+      {userChips.length > 0 && (
+        <button onClick={onClearAll} className="text-xs text-slate-500 hover:text-slate-300">
+          清除全部
+        </button>
+      )}
     </div>
   );
 }
