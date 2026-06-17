@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,30 +25,57 @@ function OverlapBadge({ score }: { score: number }) {
 }
 
 export default function KolPage() {
-  const { brandPreset, activeStrategy } = useBrandPreset();
+  const { brandPreset, activeStrategy, strategies, setActiveStrategy } = useBrandPreset();
 
   const [search, setSearch] = useState("");
   const [selPlatforms, setSelPlatforms] = useState<string[]>([]);
   const [selStyles, setSelStyles] = useState<string[]>([]);
   const [selCountries, setSelCountries] = useState<string[]>([]);
-  const [selRegions, setSelRegions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"overlap" | "fit">("overlap");
   const [selectedKol, setSelectedKol] = useState<string | null>(null);
 
-  // Committed filters
   const [committed, setCommitted] = useState<{ platforms: string[]; styles: string[]; countries: string[] }>({ platforms: [], styles: [], countries: [] });
+  const [presetGlow, setPresetGlow] = useState<Set<string>>(new Set());
+
+  // Sync strategy → filter panel
+  const [prevStrategyRef] = useState(() => activeStrategy?.id);
+  useEffect(() => {
+    if (brandPreset && activeStrategy && prevStrategyRef !== activeStrategy.id) {
+      setSelCountries([...activeStrategy.countries]);
+      setPresetGlow(new Set(["country"]));
+      const c = { platforms: selPlatforms, styles: selStyles, countries: [...activeStrategy.countries] };
+      setCommitted(c);
+    } else if (!brandPreset) {
+      setSelCountries([]); setPresetGlow(new Set());
+      setCommitted({ platforms: selPlatforms, styles: selStyles, countries: [] });
+    }
+  }, [brandPreset, activeStrategy]);
+
+  // Effective filter: strategy overrides when active
+  const effCountries = brandPreset && activeStrategy ? activeStrategy.countries : committed.countries;
 
   const filtered = kols
     .filter((k) => committed.platforms.length === 0 || committed.platforms.includes(k.platform))
     .filter((k) => committed.styles.length === 0 || k.contentStyleTags.some((s) => committed.styles.includes(s)))
+    .filter((k) => effCountries.length === 0 || effCountries.includes(k.audienceProfile.region as any))
     .filter((k) => !search || k.handle.toLowerCase().includes(search.toLowerCase()) || k.displayName.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => sortBy === "overlap" ? b.audienceOverlap - a.audienceOverlap : b.brandFitScore - a.brandFitScore);
 
   const activeCount = committed.platforms.length + committed.styles.length + committed.countries.length;
   const kol = kols.find((k) => k.id === selectedKol);
 
-  const applyFilters = () => setCommitted({ platforms: selPlatforms, styles: selStyles, countries: selCountries });
-  const resetFilters = () => { setSelPlatforms([]); setSelStyles([]); setSelCountries([]); setCommitted({ platforms: [], styles: [], countries: [] }); };
+  const matchKOLStrategy = (c: typeof committed): string | null => {
+    const arrEq = (a: string[], b: string[]) => a.length === b.length && a.every((v) => b.includes(v));
+    const match = strategies.find((s) => arrEq(c.countries, s.countries));
+    return match?.id || null;
+  };
+
+  const applyFilters = () => {
+    const c = { platforms: selPlatforms, styles: selStyles, countries: selCountries };
+    setCommitted(c);
+    if (!brandPreset) setActiveStrategy(matchKOLStrategy(c));
+  };
+  const resetFilters = () => { setSelPlatforms([]); setSelStyles([]); setSelCountries([]); setCommitted({ platforms: [], styles: [], countries: [] }); if (!brandPreset) setActiveStrategy(null); };
   const removeChip = (gk: string, v: string) => {
     const m: Record<string, [string[], (a: string[]) => void]> = { platform: [selPlatforms, setSelPlatforms], style: [selStyles, setSelStyles], country: [selCountries, setSelCountries] };
     const [arr, setter] = m[gk] || [[], () => {}]; setter(arr.filter((x) => x !== v));
@@ -59,11 +86,12 @@ export default function KolPage() {
       options: (["tiktok", "instagram", "youtube"] as Platform[]).map((p) => ({ value: p, label: platformLabel[p] })) },
     { key: "style", label: "内容风格", selected: selStyles, onChange: setSelStyles, glow: false,
       options: allContentStyles.map((s) => ({ value: s, label: styleLabel[s] })) },
-    { key: "country", label: "国家", selected: selCountries, onChange: setSelCountries, glow: false,
+    { key: "country", label: "国家", selected: selCountries, onChange: setSelCountries, glow: presetGlow.has("country"),
       options: (Object.keys(countryLabel) as Country[]).map((c) => ({ value: c, label: countryLabel[c] })) },
   ];
 
   const chipGroups = [
+    ...(brandPreset && activeStrategy ? [{ key: "brand-country" as string, label: "品牌·国家", activeValues: activeStrategy.countries.map((c) => ({ value: c, label: countryLabel[c] })) }] : []),
     { key: "platform", label: "平台", activeValues: committed.platforms.map((v) => ({ value: v, label: platformLabel[v as Platform] })) },
     { key: "style", label: "风格", activeValues: committed.styles.map((v) => ({ value: v, label: styleLabel[v as ContentStyle] })) },
     { key: "country", label: "国家", activeValues: committed.countries.map((v) => ({ value: v, label: countryLabel[v as Country] })) },
@@ -74,7 +102,11 @@ export default function KolPage() {
       <div className="space-y-6 max-w-5xl">
         <div>
           <h1 className="text-2xl font-bold text-slate-50">KOL 发现</h1>
-          <p className="mt-1 text-sm text-slate-400">基于品牌受众画像，按受众重合度推荐创作者</p>
+          <p className="mt-1 text-sm text-slate-400">
+            {brandPreset && activeStrategy
+              ? `按策略「${activeStrategy.name}」筛选 · ${activeStrategy.markets.map((m) => ({ US: "美国", UK: "英国", AU: "澳洲", SEA: "东南亚" }[m] || m)).join("·")}`
+              : "基于品牌受众画像，按受众重合度推荐创作者"}
+          </p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -89,7 +121,7 @@ export default function KolPage() {
               </button>
             ))}
           </span>
-          {brandPreset && activeStrategy && <span className="text-xs text-amber-400 font-medium ml-auto">◆ {activeStrategy.name}</span>}
+          {brandPreset && activeStrategy && <span className="text-xs text-amber-400 font-medium">◆ {activeStrategy.name}</span>}
           <span className="text-xs text-slate-500 ml-auto">{filtered.length} 个结果</span>
         </div>
 

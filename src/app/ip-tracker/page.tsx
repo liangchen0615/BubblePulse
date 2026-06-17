@@ -30,7 +30,7 @@ function OverlapBadge({ score }: { score: number }) {
 }
 
 export default function IpTrackerPage() {
-  const { brandPreset } = useBrandPreset();
+  const { brandPreset, activeStrategy } = useBrandPreset();
   const [selCategories, setSelCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"overlap" | "heat">("overlap");
   const [committed, setCommitted] = useState<string[]>([]);
@@ -67,7 +67,7 @@ export default function IpTrackerPage() {
               </button>
             ))}
           </span>
-          {brandPreset && <span className="text-xs text-amber-400 font-medium">◆ 品牌预设 · 仅显示重合≥55%</span>}
+          {brandPreset && activeStrategy && <span className="text-xs text-amber-400 font-medium">◆ {activeStrategy.name} · 重合≥55%</span>}
           <span className="text-xs text-slate-500 ml-auto">{filtered.length} 个 IP</span>
         </div>
 
