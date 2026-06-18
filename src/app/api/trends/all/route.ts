@@ -48,73 +48,59 @@ export async function GET(request: Request) {
     sources.push("mock");
   }
 
-  // YouTube API data
+  // YouTube API data — fetch from multiple regions for broader coverage
   if (source === "youtube" || source === "merged") {
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (apiKey) {
-      try {
-        const ytUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=${regionCode}&maxResults=${max}&key=${apiKey}`;
-        const ytRes = await fetch(ytUrl);
-        if (ytRes.ok) {
-          const data = await ytRes.json();
-          const country = regionCountryMap[regionCode] || "US";
-          const language = countryLanguageMap[country] || "en";
-
-          const ytItems: ContentItem[] = (data.items || []).map((v: any, i: number) => ({
-            id: `yt-${v.id || i}`,
-            platform: "youtube" as const,
-            title: v.snippet.title.slice(0, 80),
-            description: v.snippet.description?.slice(0, 200) || "",
-            thumbnailUrl: v.snippet.thumbnails?.high?.url || "",
-            url: `https://youtube.com/watch?v=${v.id}`,
-            metrics: {
-              views: parseInt(v.statistics?.viewCount, 10) || 100000,
-              likes: parseInt(v.statistics?.likeCount, 10) || 5000,
-              shares: Math.floor(parseInt(v.statistics?.viewCount, 10) * 0.01),
-              comments: parseInt(v.statistics?.commentCount, 10) || 1000,
-              growthRate: Math.floor(Math.random() * 30) + 5,
-            },
-            format: "long_video",
-            tags: v.snippet.tags?.slice(0, 6) || [],
-            country,
-            language,
-            emotion: guessEmotion(v.snippet.title),
-            demographicAffinity: {
-              age_18_24: Math.random() * 0.4 + 0.3,
-              age_25_34: Math.random() * 0.3 + 0.2,
-              age_35_44: Math.random() * 0.2 + 0.05,
-              female: Math.random() * 0.4 + 0.3,
-              male: Math.random() * 0.4 + 0.3,
-            },
-            audienceOverlap: Math.floor(Math.random() * 30) + 55,
-            lifecycle: {
-              stage: (["rising", "peak", "declining"] as const)[Math.floor(Math.random() * 3)],
-              estimatedWindow: ["3-7天", "1-2周", "2-3周"][Math.floor(Math.random() * 3)],
-              crossPlatform: Math.random() > 0.7,
-              competitorDensity: (["low", "medium", "high"] as const)[Math.floor(Math.random() * 3)],
-            },
-            createdAt: v.snippet.publishedAt || new Date().toISOString(),
-          }));
-          items = [...items, ...ytItems];
-          sources.push("youtube");
-        }
-      } catch {
-        // YouTube fetch failed, continue with whatever we have
+      const regions = ["US", "JP"]; // US + JP = ~30 items
+      for (const rc of regions) {
+        try {
+          const ytUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=${rc}&maxResults=15&key=${apiKey}`;
+          const ytRes = await fetch(ytUrl);
+          if (ytRes.ok) {
+            const data = await ytRes.json();
+            const country = regionCountryMap[rc] || "US";
+            const language = countryLanguageMap[country] || "en";
+            for (const v of (data.items || [])) {
+              items.push({
+                id: `yt-${v.id}`,
+                platform: "youtube" as const,
+                title: v.snippet.title.slice(0, 80),
+                description: v.snippet.description?.slice(0, 200) || "",
+                thumbnailUrl: v.snippet.thumbnails?.high?.url || "",
+                url: `https://youtube.com/watch?v=${v.id}`,
+                metrics: { views: parseInt(v.statistics?.viewCount,10)||100000, likes: parseInt(v.statistics?.likeCount,10)||5000, shares: Math.floor(parseInt(v.statistics?.viewCount,10)*0.01), comments: parseInt(v.statistics?.commentCount,10)||1000, growthRate: 0, heatScore: 0 },
+                format: "long_video",
+                tags: v.snippet.tags?.slice(0,6)||[],
+                country, language,
+                emotion: guessEmotion(v.snippet.title),
+                demographicAffinity: { age_18_24:0.4, age_25_34:0.35, age_35_44:0.15, female:0.5, male:0.5 },
+                audienceOverlap: Math.floor(Math.random()*25)+55,
+                lifecycle: { stage: "rising", estimatedWindow: "1-2周", crossPlatform: false, competitorDensity: "low" },
+                createdAt: v.snippet.publishedAt||new Date().toISOString(),
+              } as ContentItem);
+            }
+          }
+        } catch {}
       }
+      sources.push("youtube");
     }
   }
 
-  // Google Trends data (RSS feed, no API key)
+  // Google Trends data (RSS feed, no API key) — fetch with cache bust if needed
   if (source === "google" || source === "merged") {
-    try {
-      const googRes = await fetch(`http://localhost:3000/api/google/trending?region=${regionCode}`);
-      if (googRes.ok) {
-        const googData = await googRes.json();
-        items = [...items, ...googData.items];
-        sources.push("google");
-      }
-    } catch {
-      // Google Trends fetch failed
+    const googRegions = ["US", "JP"]; // US + JP for broader coverage
+    for (const gr of googRegions) {
+      try {
+        const googRes = await fetch(`http://localhost:3000/api/google/trending?region=${gr}`);
+        if (googRes.ok) {
+          const googData = await googRes.json();
+          if (googData.items?.length > 0) {
+            items = [...items, ...googData.items];
+            sources.push("google");
+          }
+        }
+      } catch {}
     }
   }
 
@@ -179,8 +165,31 @@ export async function GET(request: Request) {
     items = dayItems;
   }
 
+  // Compute heatScore for ALL items
+  for (const item of items) {
+    if (item.metrics.heatScore === 0) {
+      item.metrics.heatScore = calcHeatScore(item);
+    }
+  }
+
+  // Scale mock items' heatScore to blend with real API data range
+  const realItems = items.filter((i) => i.id.startsWith("yt-") || i.id.startsWith("goog-"));
+  const mockItems = items.filter((i) => !i.id.startsWith("yt-") && !i.id.startsWith("goog-"));
+  if (realItems.length > 0 && mockItems.length > 0) {
+    const realMax = Math.max(...realItems.map((i) => i.metrics.heatScore));
+    const realMin = Math.min(...realItems.map((i) => i.metrics.heatScore));
+    const mockMax = Math.max(...mockItems.map((i) => i.metrics.heatScore));
+    const mockMin = Math.min(...mockItems.map((i) => i.metrics.heatScore));
+    // Remap mock range → [realMin, realMax+3]
+    for (const item of mockItems) {
+      if (mockMax > mockMin) {
+        const t = (item.metrics.heatScore - mockMin) / (mockMax - mockMin);
+        item.metrics.heatScore = Math.round(realMin + t * (realMax - realMin + 3));
+      }
+    }
+  }
+
   // Title-based dedup: keep only the highest-heatScore entry per title
-  // Prevents the same content appearing multiple times in week/month views
   const titleMap = new Map<string, ContentItem>();
   for (const item of items) {
     const key = item.title.slice(0, 40).toLowerCase();
