@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -194,12 +194,12 @@ export default function BriefPage() {
     }
   };
 
-  const sections = briefSections.filter((s) => {
+  const sections = useMemo(() => briefSections.filter((s) => {
     if (!includeTrends && (s.key === "trends" || s.key === "separator1")) return false;
     if (!includeKol && (s.key === "kol" || s.key === "separator2")) return false;
     if (!includeIp && (s.key === "ip" || s.key === "separator3")) return false;
     return true;
-  });
+  }), [includeTrends, includeKol, includeIp]);
 
   const handleComplete = useCallback(() => {
     setPhase("complete");
