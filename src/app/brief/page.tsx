@@ -12,28 +12,34 @@ import { weeklyBrief } from "@/lib/mock-data";
 function useTypewriter(sections: { key: string; html: React.ReactNode }[], isActive: boolean, onComplete: () => void) {
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const indexRef = useRef(0);
+  const sectionsRef = useRef(sections);
+  sectionsRef.current = sections;
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || sections.length === 0) return;
     indexRef.current = 0;
     setRevealed(new Set());
 
     const interval = setInterval(() => {
-      if (indexRef.current >= sections.length) {
+      const current = sectionsRef.current;
+      if (indexRef.current >= current.length) {
         clearInterval(interval);
         onComplete();
         return;
       }
-      setRevealed((prev) => {
-        const next = new Set(prev);
-        next.add(sections[indexRef.current]!.key);
-        return next;
-      });
+      const section = current[indexRef.current];
+      if (section) {
+        setRevealed((prev) => {
+          const next = new Set(prev);
+          next.add(section.key);
+          return next;
+        });
+      }
       indexRef.current++;
     }, 600);
 
     return () => clearInterval(interval);
-  }, [isActive, sections, onComplete]);
+  }, [isActive, sections.length, onComplete]);
 
   return revealed;
 }
