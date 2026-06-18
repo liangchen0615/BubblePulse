@@ -10,7 +10,7 @@ import { ips as mockIps } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
-import { Target, TrendingUp, TrendingDown, Minus, Zap, AlertCircle, Loader2, Search } from "lucide-react";
+import { Target, TrendingUp, TrendingDown, Minus, Zap, AlertCircle, Search } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import type { Feasibility, IpCategory, IP } from "@/types";
 
@@ -37,7 +37,7 @@ export default function IpTrackerPage() {
   const [selCategories, setSelCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"overlap" | "heat">("overlap");
   const [search, setSearch] = useState("");
-  const [dataSource, setDataSource] = useState<"mock" | "merged" | "wikipedia">("mock");
+  const [dataSource] = useState<"mock" | "merged" | "wikipedia">("wikipedia");
   const [apiData, setApiData] = useState<IP[]>([]);
   const [apiLoading, setApiLoading] = useState(false);
   const [selectedIp, setSelectedIp] = useState<IP | null>(null);
@@ -85,16 +85,6 @@ export default function IpTrackerPage() {
             <Input placeholder="搜索 IP..." className="pl-9 h-8 text-sm border-slate-700 bg-slate-800/50" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
 
-          {/* Data source */}
-          <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
-            {(["mock", "merged", "wikipedia"] as const).map((s) => (
-              <button key={s} onClick={() => setDataSource(s)} className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", dataSource === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}>
-                {s === "mock" ? "离线" : s === "merged" ? "全网" : "Wiki"}
-              </button>
-            ))}
-          </span>
-          {apiLoading && <Loader2 className="h-3 w-3 animate-spin text-amber-500" />}
-
           <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
             {(["overlap", "heat"] as const).map((s) => (
               <button key={s} onClick={() => setSortBy(s)} className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", sortBy === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}>
@@ -126,7 +116,6 @@ export default function IpTrackerPage() {
                         <h3 className="font-semibold text-slate-100 text-lg">{ip.name}</h3>
                         <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{categoryLabel[ip.category]}</Badge>
                         <FeasibilityBadge feasibility={ip.feasibility} />
-                        <OverlapBadge score={ip.audienceOverlap} />
                       </div>
                       <div className="flex items-center gap-4 text-sm">
                         <span className="flex items-center gap-1 text-slate-400">热度 <span className="font-bold text-slate-100">{ip.heatScore}</span><TrendIcon direction={ip.trendDirection} /></span>
