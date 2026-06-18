@@ -35,7 +35,7 @@ export default function KolPage() {
   const [selCountries, setSelCountries] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"overlap" | "fit">("overlap");
   const [selectedKol, setSelectedKol] = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<"mock" | "merged" | "youtube">("mock");
+  const [dataSource, setDataSource] = useState<"mock" | "merged" | "youtube">("merged");
   const [apiData, setApiData] = useState<KOLType[]>([]);
   const [apiLoading, setApiLoading] = useState(false);
 
@@ -159,7 +159,7 @@ export default function KolPage() {
             <Card key={k.id} className="border-slate-700 bg-slate-800/50 hover:border-amber-500/20 transition-colors cursor-pointer" onClick={() => setSelectedKol(k.id)}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-700 text-lg font-bold text-slate-200">{k.displayName.charAt(0)}</div>
+                  {k.avatarUrl ? <img src={k.avatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover border border-slate-700" /> : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-700 text-lg font-bold text-slate-200">{k.displayName.charAt(0)}</div>}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-slate-100">{k.handle}</h3>

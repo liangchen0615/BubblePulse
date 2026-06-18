@@ -116,7 +116,11 @@ export default function IpTrackerPage() {
               <Card key={ip.id} className={cn("border-slate-700 bg-slate-800/50 hover:border-amber-500/20 transition-colors cursor-pointer", isOpportunity && "border-l-2 border-l-emerald-500", isCrowded && "border-l-2 border-l-amber-500")} onClick={() => setSelectedIp(ip)}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-700"><Target className="h-7 w-7 text-amber-500/50" /></div>
+                    {ip.imageUrl ? (
+                      <img src={ip.imageUrl} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover border border-slate-700" loading="lazy" />
+                    ) : (
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-700"><Target className="h-7 w-7 text-amber-500/50" /></div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="font-semibold text-slate-100 text-lg">{ip.name}</h3>
@@ -140,10 +144,6 @@ export default function IpTrackerPage() {
                           ))}
                         </div>
                       )}
-                      <div className="flex gap-2 mt-3">
-                        <Button variant="outline" size="sm" className="gap-1 border-slate-700 text-slate-300 text-xs h-8">追踪此 IP</Button>
-                        <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 text-xs h-8">查看详情</Button>
-                      </div>
                     </div>
                   </div>
                 </CardContent>
