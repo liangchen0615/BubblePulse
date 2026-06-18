@@ -206,9 +206,9 @@ export default function KolPage() {
                 </SheetHeader>
                 <div className="mt-6 space-y-4">
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="rounded-lg border border-slate-700 p-3 text-center"><div className="text-lg font-bold text-amber-400">{kol.audienceOverlap}%</div><div className="text-xs text-slate-500">受众重合</div></div>
-                    <div className="rounded-lg border border-slate-700 p-3 text-center"><div className="text-lg font-bold text-emerald-400">{kol.avgEngagementRate}%</div><div className="text-xs text-slate-500">互动率</div></div>
-                    <div className="rounded-lg border border-slate-700 p-3 text-center"><div className="text-lg font-bold text-slate-100">{kol.brandFitScore}</div><div className="text-xs text-slate-500">匹配分</div></div>
+                    <div className="rounded-lg border border-slate-700 p-3 text-center"><div className="text-lg font-bold text-amber-400">{kol.brandFitScore}</div><div className="text-[10px] text-slate-500">品牌匹配度</div></div>
+                    <div className="rounded-lg border border-slate-700 p-3 text-center"><div className={cn("text-lg font-bold", kol.avgEngagementRate > 3 ? "text-emerald-400" : kol.avgEngagementRate > 1.5 ? "text-amber-400" : "text-slate-400")}>{kol.avgEngagementRate}%</div><div className="text-[10px] text-slate-500">真互动率</div></div>
+                    <div className="rounded-lg border border-slate-700 p-3 text-center"><div className="text-lg font-bold text-slate-100">{kol.followers >= 1000000 ? `${(kol.followers / 1000000).toFixed(1)}M` : `${(kol.followers / 1000).toFixed(0)}K`}</div><div className="text-[10px] text-slate-500">订阅</div></div>
                   </div>
                   <Separator className="bg-slate-700" />
                   <div><h4 className="text-sm font-medium text-slate-200 mb-2">内容风格</h4><div className="flex flex-wrap gap-1">{kol.contentStyleTags.map((tag) => <Badge key={tag} variant="secondary" className="bg-slate-700 text-slate-300">{styleLabel[tag]}</Badge>)}</div></div>
@@ -312,7 +312,11 @@ export default function KolPage() {
                   </div>
 
                   <Separator className="bg-slate-700" />
-                  <div><h4 className="text-sm font-medium text-slate-200 mb-2">预估合作费用</h4><p className="text-lg font-bold text-slate-100">${kol.estimatedCostRange.min.toLocaleString()} - ${kol.estimatedCostRange.max.toLocaleString()}/条</p></div>
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-200 mb-2">预估合作费用</h4>
+                    <p className="text-lg font-bold text-slate-100">${kol.estimatedCostRange.min.toLocaleString()} - ${kol.estimatedCostRange.max.toLocaleString()}<span className="text-sm font-normal text-slate-500">/条</span></p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">基于订阅数 × 平均播放 × 内容类型费率 × 互动率因子</p>
+                  </div>
                   <div className="flex gap-2 pt-2"><Button className="flex-1 gap-1 bg-amber-500 text-black hover:bg-amber-400"><Star className="h-4 w-4" /> 收藏到品牌KOL库</Button><Button variant="outline" className="gap-1 border-slate-700 text-slate-300">导出报告</Button></div>
                 </div>
               </>

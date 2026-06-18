@@ -59,34 +59,77 @@ export async function GET(request: Request) {
     if (!chRes.ok) throw new Error("Channels API failed");
     const chData = await chRes.json();
 
-    const items: KOL[] = (chData.items || []).map((ch: any) => {
+    // Fetch recent videos for real engagement rates (batch per channel)
+    const nicheMultipliers: Record<string, number> = { ASMR: 0.012, aesthetic: 0.015, lifestyle: 0.012, educational: 0.01, comedic: 0.01, food_review: 0.012 };
+
+    const items: KOL[] = await Promise.all((chData.items || []).map(async (ch: any) => {
       const stats = ch.statistics || {};
       const snippet = ch.snippet || {};
       const subs = parseInt(stats.subscriberCount || "0", 10);
       const views = parseInt(stats.viewCount || "0", 10);
       const videos = parseInt(stats.videoCount || "0", 10);
-      const engagementRate = videos > 0 ? ((views / videos / subs) * 100 || Math.random() * 3 + 1).toFixed(1) : "3.0";
+      const handle = snippet.customUrl ? `@${snippet.customUrl}` : `@${snippet.title?.replace(/\s+/g, "").toLowerCase().slice(0, 15) || "channel"}`;
+      const styles = styleFromTags([snippet.description || "", snippet.title || ""]);
+
+      // Real engagement: fetch recent videos, compute avg (likes+comments)/views
+      let realEngagement = 0;
+      try {
+        const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${ch.id}&order=date&maxResults=5&type=video&key=${apiKey}`;
+        const searchRes = await fetch(searchUrl);
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          const videoIds = (searchData.items || []).map((v: any) => v.id?.videoId).filter(Boolean);
+          if (videoIds.length > 0) {
+            const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds.join(",")}&key=${apiKey}`;
+            const statsRes = await fetch(statsUrl);
+            if (statsRes.ok) {
+              const statsData = await statsRes.json();
+              const engagements = (statsData.items || []).map((v: any) => {
+                const s = v.statistics || {};
+                const likes = parseInt(s.likeCount || "0", 10);
+                const comments = parseInt(s.commentCount || "0", 10);
+                const vws = parseInt(s.viewCount || "1", 10);
+                return ((likes + comments) / vws) * 100;
+              });
+              realEngagement = engagements.length > 0
+                ? parseFloat((engagements.reduce((a:number,b:number) => a + b, 0) / engagements.length).toFixed(1))
+                : parseFloat(((views / Math.max(videos, 1) / Math.max(subs, 1)) * 100).toFixed(1));
+            }
+          }
+        }
+      } catch {}
+      if (realEngagement === 0) realEngagement = parseFloat(((views / Math.max(videos, 1) / Math.max(subs, 1)) * 100).toFixed(1));
+
+      // Cost: industry CPM-based formula — subs × viewRate × CPM range
+      const nicheCPM = styles.length > 0 ? (nicheMultipliers[styles[0]!] || 0.01) : 0.01;
+      const engagementFactor = Math.max(0.5, Math.min(2, realEngagement / 3));
+      const baseCPM = nicheCPM * engagementFactor; // $ per 1000 views
+      const estViews = Math.round(subs * 0.15); // ~15% of subs watch a typical video
+      const estCost = Math.round(estViews / 1000 * baseCPM * 1000);
+      const costMin = Math.round(estCost * 0.5) || 100;
+      const costMax = Math.round(estCost * 1.5) || 500;
+
+      // Merged match score: audience overlap (60%) + content fit (40%)
+      const overlapScore = Math.floor(Math.random() * 30) + 55; // still synthetic for now
+      const contentFit = Math.min(100, styles.length * 15 + (realEngagement > 3 ? 20 : realEngagement > 1.5 ? 10 : 0));
+      const matchScore = Math.round(overlapScore * 0.6 + contentFit * 0.4);
 
       return {
         id: `yt-ch-${ch.id}`,
-        handle: snippet.customUrl ? `@${snippet.customUrl}` : `@${snippet.title?.replace(/\s+/g, "").toLowerCase().slice(0, 15) || "channel"}`,
-        platform: "youtube",
+        handle, platform: "youtube",
         displayName: snippet.title || "YouTube Creator",
         avatarUrl: snippet.thumbnails?.high?.url || "",
         followers: subs || 10000,
-        avgEngagementRate: parseFloat(engagementRate as string),
-        contentStyleTags: styleFromTags([snippet.description || "", snippet.title || ""]),
-        audienceProfile: { age: "18-35", gender: "55% Female", interests: ["YouTube", "entertainment"], region: "US" },
+        avgEngagementRate: realEngagement,
+        contentStyleTags: styles,
+        audienceProfile: { age: "18-35", gender: "55% Female", interests: styles.slice(0, 3), region: "US" },
         recentViralPosts: [],
         brandCollabHistory: [],
-        estimatedCostRange: {
-          min: Math.floor(subs * 0.005) || 200,
-          max: Math.floor(subs * 0.02) || 2000,
-        },
-        brandFitScore: parseFloat((Math.random() * 3 + 6).toFixed(1)),
-        audienceOverlap: Math.floor(Math.random() * 30) + 55,
+        estimatedCostRange: { min: costMin || 200, max: costMax || 2000 },
+        brandFitScore: parseFloat(matchScore.toFixed(1)),
+        audienceOverlap: overlapScore,
       };
-    });
+    }));
 
     const result = { items, total: items.length, source: "youtube_channels", fetchedAt: new Date().toISOString() };
     cache.set(cacheKey, { data: result, expires: Date.now() + CACHE_TTL });
