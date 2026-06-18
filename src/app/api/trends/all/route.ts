@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { trends as mockTrends } from "@/lib/mock-data";
-import { calcHeatScore, calcGrowthRate } from "@/lib/heat-score";
+import { calcHeatScore, calcGrowthRate, detectLanguage } from "@/lib/heat-score";
 import type { ContentItem, Country } from "@/types";
 
 const regionCountryMap: Record<string, Country> = {
@@ -60,19 +60,20 @@ export async function GET(request: Request) {
           if (ytRes.ok) {
             const data = await ytRes.json();
             const country = regionCountryMap[rc] || "US";
-            const language = countryLanguageMap[country] || "en";
             for (const v of (data.items || [])) {
+              const title = v.snippet.title || "";
+              const lang = detectLanguage(title + " " + (v.snippet.description || ""));
               items.push({
                 id: `yt-${v.id}`,
                 platform: "youtube" as const,
-                title: v.snippet.title.slice(0, 80),
+                title: title.slice(0, 80),
                 description: v.snippet.description?.slice(0, 200) || "",
                 thumbnailUrl: v.snippet.thumbnails?.high?.url || "",
                 url: `https://youtube.com/watch?v=${v.id}`,
                 metrics: { views: parseInt(v.statistics?.viewCount,10)||100000, likes: parseInt(v.statistics?.likeCount,10)||5000, shares: Math.floor(parseInt(v.statistics?.viewCount,10)*0.01), comments: parseInt(v.statistics?.commentCount,10)||1000, growthRate: 0, heatScore: 0 },
                 format: "long_video",
                 tags: v.snippet.tags?.slice(0,6)||[],
-                country, language,
+                country, language: lang,
                 emotion: guessEmotion(v.snippet.title),
                 demographicAffinity: { age_18_24:0.4, age_25_34:0.35, age_35_44:0.15, female:0.5, male:0.5 },
                 audienceOverlap: Math.floor(Math.random()*25)+55,

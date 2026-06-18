@@ -65,3 +65,24 @@ export function calcGrowthRate(item: ContentItem): number {
   if (item.metrics.views <= 0) return 0;
   return Math.round((velocity / item.metrics.views) * 10000) / 100; // percentage
 }
+
+/** Detect content language from text (title + description) */
+export function detectLanguage(text: string): string {
+  // CJK character ranges
+  const hasJapanese = /[぀-ゟ゠-ヿ]/.test(text); // hiragana + katakana
+  const hasKorean = /[가-힯]/.test(text); // hangul
+  const hasChinese = /[一-鿿]/.test(text); // CJK unified
+  const hasThai = /[฀-๿]/.test(text);
+  const hasVietnamese = /[àáảãạăắằẳẵặâấầẩẫậêếềểễệôốồổỗộơớờởỡợưứừửữựđ]/i.test(text);
+  const hasCyrillic = /[Ѐ-ӿ]/.test(text);
+  const hasArabic = /[؀-ۿ]/.test(text);
+
+  if (hasJapanese) return "ja";
+  if (hasKorean) return "ko";
+  if (hasChinese) return "zh";
+  if (hasThai) return "th";
+  if (hasVietnamese) return "vi";
+  if (hasCyrillic) return "en"; // map to en for now (Russian etc)
+  if (hasArabic) return "en";
+  return "en"; // default to English for ASCII/Latin text
+}
