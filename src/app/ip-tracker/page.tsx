@@ -127,7 +127,13 @@ export default function IpTrackerPage() {
                       {ip.collabPrecedents.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {ip.collabPrecedents.map((p, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs bg-slate-700 text-slate-300">{p.brand} · {p.year} · {p.description}{p.socialImpression !== "N/A" && ` (${p.socialImpression})`}</Badge>
+                            p.url ? (
+                              <a key={i} href={p.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                <Badge className="text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 cursor-pointer">{p.brand} · {p.year} · {p.description}{p.socialImpression !== "N/A" && ` (${p.socialImpression})`}</Badge>
+                              </a>
+                            ) : (
+                              <Badge key={i} variant="secondary" className="text-xs bg-slate-700 text-slate-300">{p.brand} · {p.year} · {p.description}{p.socialImpression !== "N/A" && ` (${p.socialImpression})`}</Badge>
+                            )
                           ))}
                         </div>
                       )}

@@ -108,6 +108,7 @@ export interface IP {
     year: number;
     description: string;
     socialImpression: string;
+    url?: string;
   }[];
   feasibility: Feasibility;
   competitorOccupied: boolean;
