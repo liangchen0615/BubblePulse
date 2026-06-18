@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Flame, TrendingUp, AlertTriangle, Link2, Users, Zap, Loader2 } from "lucide-react";
+import { Flame, TrendingUp, AlertTriangle, Users, Zap, Loader2 } from "lucide-react";
 import { trends as mockTrends, countryLabel, languageLabel, emotionLabel } from "@/lib/mock-data";
 import { useBrandPreset } from "@/lib/brand-context";
 import { FilterPanel, FilterChips, type FilterGroup } from "@/components/layout/filter-panel";
@@ -22,8 +22,8 @@ function OverlapBadge({ score }: { score: number }) {
   );
 }
 
-function LifecycleBadge({ stage, estimatedWindow, crossPlatform }: {
-  stage: LifecycleStage; estimatedWindow: string; crossPlatform: boolean;
+function LifecycleBadge({ stage, estimatedWindow }: {
+  stage: LifecycleStage; estimatedWindow: string;
 }) {
   const config = {
     rising: "border-emerald-500/50 text-emerald-400 bg-emerald-500/10",
@@ -35,11 +35,6 @@ function LifecycleBadge({ stage, estimatedWindow, crossPlatform }: {
     <div className="flex items-center gap-1.5 text-xs">
       <span className={cn("rounded-full border px-2 py-0.5 font-medium", config[stage])}>{label}</span>
       <span className="text-slate-500">窗口 {estimatedWindow}</span>
-      {crossPlatform && (
-        <span className="inline-flex items-center gap-0.5 text-blue-400">
-          <Link2 className="h-3 w-3" /> 跨平台
-        </span>
-      )}
     </div>
   );
 }
@@ -344,7 +339,7 @@ export default function TrendsPage() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className="font-semibold text-slate-100">{trend.title}</h3>
+                      <a href={trend.url || "#"} target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-100 hover:text-amber-400 transition-colors">{trend.title}</a>
                       {trend.id.startsWith("yt-") && <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">● YT</Badge>}
                       {trend.id.startsWith("goog-") && <Badge className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30">● Google</Badge>}
                       <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{platformLabel[trend.platform]}</Badge>
@@ -361,15 +356,16 @@ export default function TrendsPage() {
                     </div>
 
                     <div className="flex items-center gap-4 mt-2">
-                      <LifecycleBadge stage={trend.lifecycle.stage} estimatedWindow={trend.lifecycle.estimatedWindow} crossPlatform={trend.lifecycle.crossPlatform} />
+                      <LifecycleBadge stage={trend.lifecycle.stage} estimatedWindow={trend.lifecycle.estimatedWindow} />
                       <span className="text-xs text-slate-500">竞品密度: {trend.lifecycle.competitorDensity === "low" ? "低" : trend.lifecycle.competitorDensity === "medium" ? "中" : "高"}</span>
                     </div>
 
                     <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
-                      <span className="flex items-center gap-1"><Flame className="h-3 w-3 text-amber-500" />热度 {(trend.metrics.views / 1000000).toFixed(0)}M</span>
+                      <span className="flex items-center gap-1"><Flame className="h-3 w-3 text-amber-500" />热度 {trend.metrics.heatScore}</span>
                       <span className={cn("flex items-center gap-1", trend.metrics.growthRate > 0 ? "text-emerald-400" : "text-red-400")}>
                         <TrendingUp className="h-3 w-3" />{trend.metrics.growthRate > 0 ? "+" : ""}{trend.metrics.growthRate}%
                       </span>
+                      <span className="text-slate-500">{(trend.metrics.views / 1000000).toFixed(0)}M 播放</span>
                       <span className="flex items-center gap-1"><Users className="h-3 w-3" />{(trend.demographicAffinity.female * 100).toFixed(0)}% 女 · {(trend.demographicAffinity.age_18_24 * 100).toFixed(0)}% 18-24</span>
                       {trend.audienceOverlap >= 80 && trend.lifecycle.stage === "rising" && (
                         <span className="inline-flex items-center gap-0.5 text-amber-400"><Zap className="h-3 w-3" /> 优先关注</span>
