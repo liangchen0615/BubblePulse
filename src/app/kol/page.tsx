@@ -162,7 +162,7 @@ export default function KolPage() {
                   {k.avatarUrl ? <img src={k.avatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover border border-slate-700" /> : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-700 text-lg font-bold text-slate-200">{k.displayName.charAt(0)}</div>}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-slate-100">{k.handle}</h3>
+                      <a href={`https://youtube.com/${k.handle}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-slate-100 hover:text-amber-400 transition-colors">{k.handle}</a>
                       <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{platformLabel[k.platform]}</Badge>
                     </div>
                     <p className="text-sm text-slate-400">{k.followers >= 1000 ? `${(k.followers / 1000).toFixed(0)}K` : k.followers} 粉丝 · 互动率 {k.avgEngagementRate}%</p>
@@ -199,7 +199,7 @@ export default function KolPage() {
                   <SheetTitle className="flex items-center gap-3 text-slate-50">
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-700 text-xl font-bold text-slate-200">{kol.displayName.charAt(0)}</div>
                     <div>
-                      <div className="text-lg">{kol.handle}</div>
+                      <a href={`https://youtube.com/${kol.handle}`} target="_blank" rel="noopener noreferrer" className="text-lg text-slate-50 hover:text-amber-400 transition-colors">{kol.handle}</a>
                       <div className="text-sm text-slate-400 font-normal">{platformLabel[kol.platform]} · {kol.followers >= 1000 ? `${(kol.followers / 1000).toFixed(0)}K` : kol.followers} 粉丝</div>
                     </div>
                   </SheetTitle>
