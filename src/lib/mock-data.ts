@@ -650,7 +650,7 @@ export const ips: IP[] = [
     trendDirection: "stable",
     audienceOverlap: 72,
     audienceProfile: "18-35岁女性，全球认知度极高，Y2K复古风加持",
-    collabPrecedents: [{ brand: "Mixue", year: 2025, description: "联名杯+周边", socialImpression: "5000万+", url: "https://en.wikipedia.org/wiki/Hello_Kitty" }, { brand: "多个茶饮品牌", description: "联名杯+周边", socialImpression: "5000万+" },
+    collabPrecedents: [{ brand: "Mixue", year: 2025, description: "联名杯+周边", socialImpression: "5000万+", url: "https://en.wikipedia.org/wiki/Hello_Kitty" },
       { brand: "多个茶饮品牌", year: 2024, description: "食品联名", socialImpression: "N/A" },
     ],
     feasibility: "medium",
