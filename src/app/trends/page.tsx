@@ -340,8 +340,9 @@ export default function TrendsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <a href={trend.url || "#"} target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-100 hover:text-amber-400 transition-colors">{trend.title}</a>
-                      {trend.id.startsWith("yt-") && <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">● YT</Badge>}
-                      {trend.id.startsWith("goog-") && <Badge className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30">● Google</Badge>}
+                      {trend.id.startsWith("yt-") && <Badge className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30 px-1">YT</Badge>}
+                      {trend.id.startsWith("goog-") && <Badge className="text-[10px] bg-blue-500/20 text-blue-400 border-blue-500/30 px-1">Google</Badge>}
+                      {!trend.id.startsWith("yt-") && !trend.id.startsWith("goog-") && <Badge className="text-[10px] bg-slate-500/20 text-slate-400 border-slate-500/30 px-1">Mock</Badge>}
                       <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{platformLabel[trend.platform]}</Badge>
                       <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{countryLabel[trend.country]}</Badge>
                       <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{languageLabel[trend.language]}</Badge>
