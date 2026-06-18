@@ -342,8 +342,7 @@ export default function TrendsPage() {
                       <a href={trend.url || "#"} target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-100 hover:text-amber-400 transition-colors">{trend.title}</a>
                       {trend.id.startsWith("yt-") && <Badge className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30 px-1">YT</Badge>}
                       {trend.id.startsWith("goog-") && <Badge className="text-[10px] bg-blue-500/20 text-blue-400 border-blue-500/30 px-1">Google</Badge>}
-                      {!trend.id.startsWith("yt-") && !trend.id.startsWith("goog-") && <Badge className="text-[10px] bg-slate-500/20 text-slate-400 border-slate-500/30 px-1">Mock</Badge>}
-                      <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{platformLabel[trend.platform]}</Badge>
+                      {!trend.id.startsWith("yt-") && !trend.id.startsWith("goog-") && <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{platformLabel[trend.platform]}</Badge>}
                       <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{countryLabel[trend.country]}</Badge>
                       <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{languageLabel[trend.language]}</Badge>
                       <Badge variant="outline" className="text-xs border-slate-600 text-amber-400/80">{emotionLabel[trend.emotion]}</Badge>
