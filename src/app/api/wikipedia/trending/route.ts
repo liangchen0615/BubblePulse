@@ -29,19 +29,22 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Get yesterday's date in YYYY/MM/DD format
-    const yesterday = new Date(Date.now() - 86400000);
-    const y = yesterday.getFullYear();
-    const m = String(yesterday.getMonth() + 1).padStart(2, "0");
-    const d = String(yesterday.getDate()).padStart(2, "0");
-
-    const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/${y}/${m}/${d}`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "BubblePulse/1.0 (demo; contact@bubblepulse.dev)" },
-    });
-
-    if (!res.ok) throw new Error(`Wikipedia API returned ${res.status}`);
-    const data = await res.json();
+    // Try last 3 days — Wikipedia data may lag
+    let data: any = null;
+    let dateStr = "";
+    for (let offset = 1; offset <= 3; offset++) {
+      const date = new Date(Date.now() - offset * 86400000);
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      dateStr = `${y}${m}${d}`;
+      const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/${y}/${m}/${d}`;
+      const res = await fetch(url, {
+        headers: { "User-Agent": "BubblePulse/1.0 (demo; contact@bubblepulse.dev)" },
+      });
+      if (res.ok) { data = await res.json(); break; }
+    }
+    if (!data) throw new Error("Wikipedia API returned no data for last 3 days");
 
     const articles = (data.items?.[0]?.articles || [])
       .filter((a: any) => {
@@ -51,7 +54,7 @@ export async function GET(request: Request) {
       .slice(0, max);
 
     const items: IP[] = articles.map((a: any, i: number) => ({
-      id: `wiki-${i}-${y}${m}${d}`,
+      id: `wiki-${i}-${dateStr}`,
       name: a.article.replace(/_/g, " ") || "Unknown",
       category: categoryFromTitle(a.article || "") as any,
       heatScore: Math.min(100, Math.floor((a.views || 100000) / 100000)),
