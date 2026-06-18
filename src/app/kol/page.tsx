@@ -13,7 +13,7 @@ import { kols as mockKols, countryLabel } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import type { KOL as KOLType } from "@/types";
-import { Users, Search, DollarSign, Star, BarChart3 } from "lucide-react";
+import { Search, Star, BarChart3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { Platform, ContentStyle, Country, Market } from "@/types";
 
@@ -165,10 +165,6 @@ export default function KolPage() {
                 </div>
                 <div className="flex flex-wrap gap-1 mt-3">
                   {k.contentStyleTags.map((tag) => <Badge key={tag} variant="secondary" className="text-xs bg-slate-700 text-slate-300">{styleLabel[tag]}</Badge>)}
-                </div>
-                <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
-                  <span className="flex items-center gap-1"><Users className="h-3 w-3" />受众重合 {k.audienceOverlap}%</span>
-                  <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />${(k.estimatedCostRange.min / 1000).toFixed(0)}K-{(k.estimatedCostRange.max / 1000).toFixed(0)}K/条</span>
                 </div>
               </CardContent>
             </Card>
