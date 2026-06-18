@@ -52,6 +52,21 @@ export default function IpTrackerPage() {
   };
   useEffect(() => { fetchIps(); }, [dataSource]);
 
+  // Fetch Wikipedia thumbnails for IPs without imageUrl
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+  useEffect(() => {
+    for (const ip of [...mockIps, ...apiData]) {
+      if (!ip.imageUrl && !thumbnails[ip.id]) {
+        fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(ip.name)}`)
+          .then((r) => r.json()).then((d) => {
+            if (d.thumbnail?.source) {
+              setThumbnails((prev) => ({ ...prev, [ip.id]: d.thumbnail.source }));
+            }
+          }).catch(() => {});
+      }
+    }
+  }, [apiData]);
+
   const allIps = dataSource === "mock" ? mockIps : (apiData.length > 0 ? apiData : mockIps);
 
   const filtered = allIps
@@ -106,8 +121,8 @@ export default function IpTrackerPage() {
               <Card key={ip.id} className={cn("border-slate-700 bg-slate-800/50 hover:border-amber-500/20 transition-colors cursor-pointer", isOpportunity && "border-l-2 border-l-emerald-500", isCrowded && "border-l-2 border-l-amber-500")} onClick={() => setSelectedIp(ip)}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
-                    {ip.imageUrl ? (
-                      <img src={ip.imageUrl} alt={ip.name} className="h-14 w-14 shrink-0 rounded-lg object-cover border border-slate-700" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    {(ip.imageUrl || thumbnails[ip.id]) ? (
+                      <img src={ip.imageUrl || thumbnails[ip.id]} alt={ip.name} className="h-14 w-14 shrink-0 rounded-lg object-cover border border-slate-700" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     ) : (
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-lg font-bold text-amber-400 border border-amber-500/20">
                         {ip.name.charAt(0)}
