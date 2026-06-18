@@ -183,7 +183,15 @@ export default function BriefPage() {
       ...weeklyBrief.topOpportunities.map((o, i) => `${i + 1}. ${o.title} (重合${o.audienceOverlap}% · ${o.window}) → ${o.action}`),
       ...weeklyBrief.kolRecommendations.map((k) => `推荐KOL: ${k.handle} — ${k.reason} (${k.costRange})`),
     ].join("\n");
-    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+    try {
+      navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+    } catch {
+      // Fallback for insecure contexts
+      const ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const sections = briefSections.filter((s) => {

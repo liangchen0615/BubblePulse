@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { trends as mockTrends } from "@/lib/mock-data";
-import { calcHeatScore } from "@/lib/heat-score";
+import { calcHeatScore, calcGrowthRate } from "@/lib/heat-score";
 import type { ContentItem, Country } from "@/types";
 
 const regionCountryMap: Record<string, Country> = {
@@ -165,10 +165,13 @@ export async function GET(request: Request) {
     items = dayItems;
   }
 
-  // Compute heatScore for ALL items
+  // Compute heatScore and growthRate for ALL items
   for (const item of items) {
     if (item.metrics.heatScore === 0) {
       item.metrics.heatScore = calcHeatScore(item);
+    }
+    if (item.metrics.growthRate === 0 && item.createdAt) {
+      item.metrics.growthRate = calcGrowthRate(item);
     }
   }
 

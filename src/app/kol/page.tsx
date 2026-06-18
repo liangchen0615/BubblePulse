@@ -35,24 +35,22 @@ export default function KolPage() {
   const [selCountries, setSelCountries] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"overlap" | "fit">("overlap");
   const [selectedKol, setSelectedKol] = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<"mock" | "merged" | "youtube">("merged");
+  const [dataSource] = useState<"youtube">("youtube");
   const [apiData, setApiData] = useState<KOLType[]>([]);
   const [apiLoading, setApiLoading] = useState(false);
 
   const [committed, setCommitted] = useState<{ platforms: string[]; styles: string[]; countries: string[] }>({ platforms: [], styles: [], countries: [] });
   const [presetGlow, setPresetGlow] = useState<Set<string>>(new Set());
 
-  // Fetch KOLs from API
-  const fetchKols = () => {
-    if (dataSource === "mock") { setApiData([]); return; }
+  // Fetch KOLs from YouTube API
+  useEffect(() => {
     setApiLoading(true);
-    fetch(`/api/kols/all?source=${dataSource}&max=10`)
+    fetch("/api/kols/all?source=youtube&max=20")
       .then((r) => r.json()).then((d) => { setApiData(d.items); setApiLoading(false); })
       .catch(() => setApiLoading(false));
-  };
-  useEffect(() => { fetchKols(); }, [dataSource]);
+  }, []);
 
-  const allKols = dataSource === "mock" ? mockKols : (apiData.length > 0 ? apiData : mockKols);
+  const allKols = apiData.length > 0 ? apiData : mockKols; // fallback to mock on first load
 
   // Sync strategy → filter panel
   const [prevStrategyRef] = useState(() => activeStrategy?.id);
@@ -131,14 +129,6 @@ export default function KolPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
             <Input placeholder="搜索 KOL..." className="pl-9 h-8 text-sm border-slate-700 bg-slate-800/50" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          {/* Data source */}
-          <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
-            {(["mock", "merged", "youtube"] as const).map((s) => (
-              <button key={s} onClick={() => setDataSource(s)} className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", dataSource === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}>
-                {s === "mock" ? "离线" : s === "merged" ? "全网" : "YT"}
-              </button>
-            ))}
-          </span>
           {apiLoading && <Loader2 className="h-3 w-3 animate-spin text-amber-500" />}
 
           <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
