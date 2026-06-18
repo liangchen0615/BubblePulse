@@ -179,6 +179,18 @@ export async function GET(request: Request) {
     items = dayItems;
   }
 
+  // Title-based dedup: keep only the highest-heatScore entry per title
+  // Prevents the same content appearing multiple times in week/month views
+  const titleMap = new Map<string, ContentItem>();
+  for (const item of items) {
+    const key = item.title.slice(0, 40).toLowerCase();
+    const existing = titleMap.get(key);
+    if (!existing || item.metrics.heatScore > existing.metrics.heatScore) {
+      titleMap.set(key, item);
+    }
+  }
+  items = [...titleMap.values()].sort((a, b) => b.metrics.heatScore - a.metrics.heatScore);
+
   return NextResponse.json({
     items,
     sources,
