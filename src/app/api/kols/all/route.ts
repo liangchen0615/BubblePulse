@@ -6,12 +6,13 @@ export async function GET(request: Request) {
   const source = searchParams.get("source") || "mock"; // mock | youtube | merged
   const max = Math.min(parseInt(searchParams.get("max") || "10", 10), 20);
 
-  let items = [...mockKols];
-  const sources: string[] = source !== "youtube" ? ["mock"] : [];
+  let items = source === "mock" ? [...mockKols] : [];
+  const sources: string[] = source === "mock" ? ["mock"] : [];
 
   if (source === "youtube" || source === "merged") {
     try {
-      const ytRes = await fetch(`http://localhost:3000/api/youtube/channels?max=${max}`);
+      const fetchMax = source === "merged" ? 20 : max; // pull more for merged mode
+      const ytRes = await fetch(`http://localhost:3000/api/youtube/channels?max=${fetchMax}`);
       if (ytRes.ok) {
         const ytData = await ytRes.json();
         items = [...items, ...ytData.items];
@@ -20,7 +21,6 @@ export async function GET(request: Request) {
     } catch {}
   }
 
-  // Deduplicate by id
   const seen = new Set<string>();
   items = items.filter((item) => { if (seen.has(item.id)) return false; seen.add(item.id); return true; });
 
