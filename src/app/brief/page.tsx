@@ -174,6 +174,17 @@ export default function BriefPage() {
   const [includeTrends, setIncludeTrends] = useState(true);
   const [includeKol, setIncludeKol] = useState(true);
   const [includeIp, setIncludeIp] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const handleExportPDF = () => window.print();
+  const handleCopyLink = () => {
+    const text = [
+      `CHAGEE 本周内容策略简报 — ${weeklyBrief.weekStart}`,
+      ...weeklyBrief.topOpportunities.map((o, i) => `${i + 1}. ${o.title} (重合${o.audienceOverlap}% · ${o.window}) → ${o.action}`),
+      ...weeklyBrief.kolRecommendations.map((k) => `推荐KOL: ${k.handle} — ${k.reason} (${k.costRange})`),
+    ].join("\n");
+    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  };
 
   const sections = briefSections.filter((s) => {
     if (!includeTrends && (s.key === "trends" || s.key === "separator1")) return false;
@@ -260,11 +271,11 @@ export default function BriefPage() {
             </div>
             {phase === "complete" && (
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="gap-1 border-slate-700 text-slate-300 text-xs h-8">
+                <Button variant="outline" size="sm" className="gap-1 border-slate-700 text-slate-300 text-xs h-8" onClick={handleExportPDF}>
                   <Download className="h-4 w-4" /> 导出 PDF
                 </Button>
-                <Button variant="outline" size="sm" className="gap-1 border-slate-700 text-slate-300 text-xs h-8">
-                  <Copy className="h-4 w-4" /> 复制分享链接
+                <Button variant="outline" size="sm" className="gap-1 border-slate-700 text-slate-300 text-xs h-8" onClick={handleCopyLink}>
+                  {copied ? <><CheckCircle2 className="h-4 w-4 text-emerald-400" /> 已复制</> : <><Copy className="h-4 w-4" /> 复制分享链接</>}
                 </Button>
               </div>
             )}
