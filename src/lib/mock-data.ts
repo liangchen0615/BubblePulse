@@ -744,6 +744,15 @@ export const calendarEvents: CalendarEvent[] = [
   { id: "cal13", date: "2026-11-01", region: "SEA", country: "MY", name: "排灯节 (Deepavali)", type: "cultural", suggestion: "印度新年 → 金色主题限定 + 香料奶茶系列 + 节日礼品装" },
   { id: "cal14", date: "2026-01-26", region: "AU", country: "AU", name: "Australia Day", type: "holiday", suggestion: "澳洲国庆 → 南半球夏日特调 + 海滩主题pop-up" },
   { id: "cal15", date: "2026-05-22", region: "AU", country: "AU", name: "Vivid Sydney", type: "festival", suggestion: "灯光艺术节 → 发光杯身 + 灯光装置联名打卡" },
+  // Missing countries
+  { id: "cal16", date: "2026-07-01", region: "US", country: "CA", name: "Canada Day", type: "holiday", suggestion: "加拿大国庆 → 枫叶主题杯身 + 红白限定特调" },
+  { id: "cal17", date: "2026-07-14", region: "UK", country: "FR", name: "Bastille Day", type: "holiday", suggestion: "法国国庆 → 法式甜点联名 + 蓝白红限定杯身" },
+  { id: "cal18", date: "2026-10-03", region: "UK", country: "DE", name: "Oktoberfest", type: "festival", suggestion: "慕尼黑啤酒节 → 德国啤酒风味特调 + 巴伐利亚主题装饰" },
+  { id: "cal19", date: "2026-06-12", region: "SEA", country: "PH", name: "Independence Day (PH)", type: "holiday", suggestion: "菲律宾独立日 → 热带水果限定 + 民族色彩杯身设计" },
+  { id: "cal20", date: "2026-02-14", region: "SEA", country: "VN", name: "Tet (越南新年)", type: "cultural", suggestion: "越南春节 → 花卉主题杯身 + 年货礼盒 + 红包营销" },
+  { id: "cal21", date: "2026-03-20", region: "SEA", country: "JP", name: "樱花季 (Sakura Season)", type: "cultural", suggestion: "樱花季限定 → 樱花风味特调 + 粉色系杯身 + 赏樱打卡活动" },
+  { id: "cal22", date: "2026-09-15", region: "SEA", country: "KR", name: "秋夕 (Chuseok)", type: "cultural", suggestion: "韩国中秋 → 传统茶礼套装 + 韩服主题门店装饰" },
+  { id: "cal23", date: "2026-10-01", region: "SEA", country: "CN", name: "中国国庆节", type: "holiday", suggestion: "黄金周限定 → 国庆主题杯身 + 旅行套餐联名" },
 ];
 
 export const weeklyBrief: WeeklyBrief = {
