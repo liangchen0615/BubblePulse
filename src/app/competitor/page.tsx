@@ -35,17 +35,18 @@ export default function CompetitorPage() {
   const allTypes: string[] = ["全部", "新品", "开店", "联名", "促销", "品牌", "文化", "其他"];
   const allPlatforms: string[] = ["全部", "tiktok", "instagram", "facebook"];
 
-  // Cross-brand insight: scan overlapping patterns
+  // Cross-brand insight: scan overlapping patterns (90-day window)
   const recentActivities = competitorActivities.filter((a) => {
     const d = new Date(a.date);
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
-    return d >= thirtyDaysAgo && a.type === "新品";
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000);
+    return d >= ninetyDaysAgo && a.type === "新品";
   });
   const brandCountByKeyword: Record<string, Set<string>> = {};
   const keywordMap: Record<string, string[]> = {
     "芒果": ["芒果"], "椰子": ["椰子", "椰椰"], "西瓜": ["西瓜"],
     "草莓": ["草莓"], "芝士": ["芝士", "奶酪"], "荔枝": ["荔枝"],
-    "咖啡": ["咖啡", "拿铁"], "茶": ["奶茶", "茶"],
+    "咖啡": ["咖啡", "拿铁", "生椰拿铁"], "茶饮": ["奶茶", "茶", "饮品", "水果"],
+    "限定": ["限定", "季节"],
   };
   for (const a of recentActivities) {
     for (const [label, kws] of Object.entries(keywordMap)) {
