@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/trends", label: "实时热点", icon: Flame },
+  { href: "/competitor", label: "竞品情报", icon: Target },
+  { href: "/trends", label: "行业趋势", icon: Flame },
   { href: "/kol", label: "KOL 发现", icon: Users },
   { href: "/ip-tracker", label: "IP 联动追踪", icon: Target },
   { href: "/brief", label: "AI 策略简报", icon: FileText },

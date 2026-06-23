@@ -1,4 +1,4 @@
-export type Platform = "tiktok" | "instagram" | "youtube_shorts" | "youtube";
+export type Platform = "tiktok" | "instagram" | "facebook" | "youtube_shorts" | "youtube";
 export type ContentFormat = "hashtag" | "audio" | "challenge" | "short_video" | "long_video";
 export type LifecycleStage = "rising" | "peak" | "declining";
 export type Feasibility = "high" | "medium" | "low";
@@ -151,6 +151,29 @@ export interface CalendarEvent {
   name: string;
   type: "cultural" | "sports" | "holiday" | "festival";
   suggestion: string;
+}
+
+export type ActivityType = "新品" | "开店" | "联名" | "促销" | "品牌" | "文化" | "其他";
+
+export interface CompetitorActivity {
+  id: string;
+  brandId: string;
+  brandName: string;
+  date: string;
+  type: ActivityType;
+  title: string;
+  platform: Platform;
+  heat: "高" | "中" | "低";
+  url?: string;
+}
+
+export interface CompetitorBrand {
+  id: string;
+  name: string;
+  platforms: Platform[];
+  recentPostCount: number;
+  postChange: number; // percentage
+  engagementRate: number;
 }
 
 export interface WeeklyBrief {

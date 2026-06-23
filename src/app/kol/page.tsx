@@ -17,7 +17,7 @@ import { Search, Star, BarChart3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { Platform, ContentStyle, Country, Market } from "@/types";
 
-const platformLabel: Record<Platform, string> = { tiktok: "TikTok", instagram: "Instagram", youtube_shorts: "YT Shorts", youtube: "YouTube" };
+const platformLabel: Record<string, string> = { tiktok: "TikTok", instagram: "Instagram", facebook: "Facebook", youtube_shorts: "YT Shorts", youtube: "YouTube" };
 const styleLabel: Record<ContentStyle, string> = { ASMR: "ASMR", aesthetic: "Aesthetic", comedic: "Comedic", educational: "Educational", lifestyle: "Lifestyle", food_review: "Food Review" };
 const allContentStyles: ContentStyle[] = ["ASMR", "aesthetic", "comedic", "educational", "lifestyle", "food_review"];
 

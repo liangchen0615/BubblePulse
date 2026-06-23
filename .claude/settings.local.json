@@ -30,7 +30,9 @@
       "Bash(sed -i 's/growthRate: 0,/growthRate: 0, heatScore: 0,/' src/app/api/google/trending/route.ts)",
       "Bash(sed -i 's/growthRate: \\\\\\([0-9-]*\\\\\\) },/growthRate: \\\\1, heatScore: 0 },/' src/lib/mock-data.ts)",
       "Bash(sed -i 's/growthRate: \\\\\\([0-9-]*\\\\\\) },/growthRate: \\\\1, heatScore: 0 },/' src/app/api/reddit/trending/route.ts)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "WebFetch(domain:baike.baidu.com)",
+      "WebFetch(domain:www.foodaily.com)"
     ]
   }
 }
