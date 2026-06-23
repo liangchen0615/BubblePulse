@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { competitorBrands, competitorActivities } from "@/lib/competitor-data";
-import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
+import { mockInsights, type AIInsight } from "@/lib/insight-data";
+import { TrendingUp, TrendingDown, ExternalLink, ChevronDown, ChevronUp, Brain, AlertTriangle, Eye, DollarSign, Lightbulb } from "lucide-react";
 import type { ActivityType, Platform } from "@/types";
 
 const typeLabel: Record<string, { icon: string; color: string }> = {
@@ -115,6 +116,9 @@ export default function CompetitorPage() {
         </button>
       </div>
 
+      {/* AI Insight Panel */}
+      <InsightPanel insights={mockInsights} />
+
       {/* Brand cards */}
       {competitorBrands.filter((b) => selectedBrands.has(b.id)).map((brand) => {
         const activities = competitorActivities
@@ -205,6 +209,80 @@ export default function CompetitorPage() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function InsightPanel({ insights }: { insights: AIInsight[] }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const valueIcon = (tag: string) => {
+    if (tag.includes("成本")) return <DollarSign className="h-3 w-3" />;
+    if (tag.includes("预警")) return <AlertTriangle className="h-3 w-3" />;
+    return <Eye className="h-3 w-3" />;
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-1">
+        <Brain className="h-4 w-4 text-purple-400" />
+        <span className="text-sm font-semibold text-slate-200">AI 信号洞察</span>
+        <span className="text-xs text-slate-500">跨源信号连接 · 系统自动发现</span>
+      </div>
+      {insights.map((ins) => {
+        const isExpanded = expandedId === ins.id;
+        return (
+          <div key={ins.id} className="rounded-xl border border-slate-700 bg-slate-800/50 overflow-hidden">
+            <button onClick={() => setExpandedId(isExpanded ? null : ins.id)} className="w-full text-left p-4 hover:bg-slate-800/70 transition-colors">
+              <div className="flex items-start gap-3">
+                <Lightbulb className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h3 className="font-medium text-slate-100">{ins.title}</h3>
+                    <span className="text-[10px] text-slate-600 bg-slate-700/50 px-1.5 py-0.5 rounded">置信度 {Math.round(ins.confidence * 100)}%</span>
+                  </div>
+                  <p className="text-sm text-slate-400">{ins.signals}</p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    {ins.valueTags.map((tag) => (
+                      <span key={tag} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                        {valueIcon(tag)} {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-500 shrink-0" /> : <ChevronDown className="h-4 w-4 text-slate-500 shrink-0" />}
+              </div>
+            </button>
+            {isExpanded && (
+              <div className="px-4 pb-4 space-y-3 border-t border-slate-700/50 pt-3 mx-4">
+                <div>
+                  <h4 className="text-xs font-medium text-slate-400 mb-2">📡 信号证据链</h4>
+                  <div className="space-y-1.5">
+                    {ins.evidence.map((ev, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs">
+                        <span className="text-amber-400 shrink-0 mt-0.5">•</span>
+                        <div>
+                          <span className="text-slate-300 font-medium">{ev.source}</span>
+                          <span className="text-slate-600 mx-1">·</span>
+                          <span className="text-slate-500">{ev.platform}</span>
+                          <span className="text-slate-600 mx-1">·</span>
+                          <span className="text-slate-500">{ev.date}</span>
+                          <p className="text-slate-400 mt-0.5">{ev.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+                  <h4 className="text-xs font-medium text-amber-300 mb-1">📋 建议行动</h4>
+                  <p className="text-sm text-slate-300">{ins.action}</p>
+                  <p className="text-xs text-amber-400/70 mt-1">→ {ins.actionFor}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
