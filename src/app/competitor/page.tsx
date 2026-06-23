@@ -35,12 +35,62 @@ export default function CompetitorPage() {
   const allTypes: string[] = ["全部", "新品", "开店", "联名", "促销", "品牌", "文化", "其他"];
   const allPlatforms: string[] = ["全部", "tiktok", "instagram", "facebook"];
 
+  // Cross-brand insight: scan overlapping patterns
+  const recentActivities = competitorActivities.filter((a) => {
+    const d = new Date(a.date);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+    return d >= thirtyDaysAgo && a.type === "新品";
+  });
+  const brandCountByKeyword: Record<string, Set<string>> = {};
+  const keywordMap: Record<string, string[]> = {
+    "芒果": ["芒果"], "椰子": ["椰子", "椰椰"], "西瓜": ["西瓜"],
+    "草莓": ["草莓"], "芝士": ["芝士", "奶酪"], "荔枝": ["荔枝"],
+    "咖啡": ["咖啡", "拿铁"], "茶": ["奶茶", "茶"],
+  };
+  for (const a of recentActivities) {
+    for (const [label, kws] of Object.entries(keywordMap)) {
+      if (kws.some((kw) => a.title.includes(kw))) {
+        if (!brandCountByKeyword[label]) brandCountByKeyword[label] = new Set();
+        brandCountByKeyword[label].add(a.brandName);
+      }
+    }
+  }
+  const insights = Object.entries(brandCountByKeyword)
+    .filter(([, brands]) => brands.size >= 2)
+    .map(([keyword, brands]) => ({ keyword, brands: [...brands].slice(0, 3) }));
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-2xl font-bold text-slate-50">竞品情报</h1>
         <p className="mt-1 text-sm text-slate-400">监测竞品品牌在 TikTok/Instagram/Facebook 上的社媒动态</p>
       </div>
+
+      {/* Cross-brand insight panel */}
+      {insights.length > 0 && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-amber-400 text-sm font-semibold">⚠ 交叉信号</span>
+            <span className="text-xs text-slate-500">近30天新品趋势 · 系统自动识别</span>
+          </div>
+          <div className="space-y-1.5">
+            {insights.map((ins, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                <span className="text-amber-400 font-medium">{ins.keyword}</span>
+                <span className="text-slate-500">品类同时出现在</span>
+                {ins.brands.map((b, j) => (
+                  <span key={b}>
+                    <span className="text-slate-200 font-medium">{b}</span>
+                    {j < ins.brands.length - 1 && <span className="text-slate-600"> · </span>}
+                  </span>
+                ))}
+                <span className="text-slate-500">的新品线中</span>
+                <span className="text-xs text-amber-400/70 ml-auto">建议关注此赛道</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Brand selector */}
       <div className="flex flex-wrap items-center gap-2">
