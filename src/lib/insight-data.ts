@@ -56,7 +56,7 @@ export const mockInsights: AIInsight[] = [
     confidence: 0.75,
     evidence: [
       { source: "蜜雪冰城 MIXUE", platform: "TikTok", date: "2026-06-14", content: "胡志明市首店开业，探店视频中展示了本地供应链配送中心" },
-      { source: "王寒冰（蜜雪东南亚负责人）", platform: "Instagram", date: "2026-06-10", content: "连续两周定位胡志明市，分享本地食材市场考察照片" },
+      { source: "蜜雪冰城东南亚业务负责人", platform: "Instagram", date: "2026-06-10", content: "连续两周定位胡志明市，分享本地食材市场考察照片" },
       { source: "蜜雪冰城 MIXUE", platform: "LinkedIn", date: "2026-06-01", content: "同时发布3个越南岗位：供应链经理、品控主管、冷链物流专员" },
     ],
     action: "如果贵司也在越南市场有布局，建议加速本地供应链建设——蜜雪正在抢建基础设施，先发优势窗口正在收窄",
