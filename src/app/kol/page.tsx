@@ -1,315 +1,166 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { FilterPanel, FilterChips, type FilterGroup } from "@/components/layout/filter-panel";
-import { useBrandPreset } from "@/lib/brand-context";
-import { kols as mockKols, countryLabel } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
-import type { KOL as KOLType } from "@/types";
-import { Search, Star, BarChart3 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import type { Platform, ContentStyle, Country, Market } from "@/types";
+import { competitorBrands } from "@/lib/competitor-data";
+import {
+  Users, TrendingUp, ExternalLink,
+} from "lucide-react";
 
-const platformLabel: Record<string, string> = { tiktok: "TikTok", instagram: "Instagram", facebook: "Facebook", youtube_shorts: "YT Shorts", youtube: "YouTube" };
-const styleLabel: Record<ContentStyle, string> = { ASMR: "ASMR", aesthetic: "Aesthetic", comedic: "Comedic", educational: "Educational", lifestyle: "Lifestyle", food_review: "Food Review" };
-const allContentStyles: ContentStyle[] = ["ASMR", "aesthetic", "comedic", "educational", "lifestyle", "food_review"];
+const brandColorMap: Record<string, string> = {
+  "br1": "bg-emerald-500",
+  "br2": "bg-red-500",
+  "br3": "bg-blue-500",
+  "br4": "bg-amber-500",
+};
 
-function OverlapBadge({ score }: { score: number }) {
-  const color = score >= 80 ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10" : score >= 60 ? "border-amber-500/50 text-amber-400 bg-amber-500/10" : "border-blue-400/50 text-blue-400 bg-blue-400/10";
-  return <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium shrink-0", color)}>{score}% 重合</span>;
+const platformLabel: Record<string, string> = { tiktok: "TikTok", instagram: "Instagram", facebook: "Facebook" };
+
+interface KOLCollab {
+  id: string;
+  kolHandle: string;
+  kolName: string;
+  platform: "tiktok" | "instagram" | "facebook";
+  followers: number;
+  contentStyle: string;
+  brandId: string;
+  brandName: string;
+  date: string;
+  content: string;
+  engagementRate: number;
 }
 
+const kolCollabs: KOLCollab[] = [
+  // 喜茶 collabs
+  { id: "k1", kolHandle: "@nycfoodgirl", kolName: "NYC Food Girl", platform: "tiktok", followers: 2800000, contentStyle: "美食测评", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-06-11", content: "纽约新店开业探店，芝士奶盖系列测评视频", engagementRate: 4.2 },
+  { id: "k2", kolHandle: "@sportsdrinkreviews", kolName: "Sports Drink Reviews", platform: "instagram", followers: 850000, contentStyle: "运动/赛事", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-06-10", content: "NBA联名系列限定杯身开箱+口味测评", engagementRate: 5.8 },
+  { id: "k3", kolHandle: "@asianfoodie_la", kolName: "Asian Foodie LA", platform: "tiktok", followers: 1200000, contentStyle: "亚洲美食", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-05-22", content: "纽约Soho门店预热探店，品牌故事内容", engagementRate: 3.5 },
+  { id: "k4", kolHandle: "@drinkphotographer", kolName: "Drink Photographer", platform: "instagram", followers: 620000, contentStyle: "美食摄影", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-04-16", content: "夏季水果系列新品视觉内容拍摄", engagementRate: 6.1 },
+
+  // 蜜雪冰城 collabs
+  { id: "k5", kolHandle: "@bobabae_", kolName: "Boba Bae", platform: "tiktok", followers: 3500000, contentStyle: "ASMR/饮品", brandId: "br2", brandName: "蜜雪冰城 MIXUE", date: "2026-06-14", content: "胡志明市首店探店，椰椰系列ASMR展示", engagementRate: 7.3 },
+  { id: "k6", kolHandle: "@vietnamesefoodtour", kolName: "Vietnam Food Tour", platform: "tiktok", followers: 1800000, contentStyle: "美食探店", brandId: "br2", brandName: "蜜雪冰城 MIXUE", date: "2026-06-13", content: "越南门店开业本地化探店内容", engagementRate: 6.8 },
+  { id: "k7", kolHandle: "@cheapeatsclub", kolName: "Cheap Eats Club", platform: "instagram", followers: 950000, contentStyle: "性价比美食", brandId: "br2", brandName: "蜜雪冰城 MIXUE", date: "2026-06-08", content: "第二杯半价活动推广，强调性价比定位", engagementRate: 4.5 },
+
+  // 瑞幸 collabs
+  { id: "k8", kolHandle: "@coffeenerdchina", kolName: "Coffee Nerd", platform: "tiktok", followers: 920000, contentStyle: "咖啡垂类", brandId: "br3", brandName: "瑞幸 Luckin", date: "2026-06-13", content: "生椰拿铁3.0专业测评，云南咖啡豆深度分析", engagementRate: 5.2 },
+  { id: "k9", kolHandle: "@budgetcoffeeguide", kolName: "Budget Coffee Guide", platform: "instagram", followers: 680000, contentStyle: "性价比测评", brandId: "br3", brandName: "瑞幸 Luckin", date: "2026-05-28", content: "9.9元咖啡节活动推广+横向对比测评", engagementRate: 6.0 },
+  { id: "k10", kolHandle: "@moutaicollabwatch", kolName: "联名观察员", platform: "tiktok", followers: 560000, contentStyle: "联名/潮流", brandId: "br3", brandName: "瑞幸 Luckin", date: "2026-04-12", content: "茅台联名第二弹开箱+话题引爆", engagementRate: 9.2 },
+
+  // CHAGEE collabs
+  { id: "k11", kolHandle: "@matchamandy", kolName: "Matcha Mandy", platform: "tiktok", followers: 1500000, contentStyle: "茶道/东方美学", brandId: "br4", brandName: "CHAGEE 霸王茶姬", date: "2026-06-15", content: "品牌历史故事纪录片风格合作，茶山溯源内容", engagementRate: 7.8 },
+  { id: "k12", kolHandle: "@orientalstyle_daily", kolName: "东方美学日常", platform: "instagram", followers: 780000, contentStyle: "生活方式/美学", brandId: "br4", brandName: "CHAGEE 霸王茶姬", date: "2026-06-08", content: "创始人故事合作内容，东方美学品牌叙事", engagementRate: 5.5 },
+  { id: "k13", kolHandle: "@pinoyfoodie", kolName: "Pinoy Foodie", platform: "tiktok", followers: 2100000, contentStyle: "菲律宾美食", brandId: "br4", brandName: "CHAGEE 霸王茶姬", date: "2026-05-12", content: "菲律宾市场优惠券+买一送一活动推广", engagementRate: 6.3 },
+];
+
 export default function KolPage() {
-  const { brandPreset, activeStrategy, strategies, setActiveStrategy } = useBrandPreset();
+  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"date" | "engagement">("date");
 
-  const [search, setSearch] = useState("");
-  const [selPlatforms, setSelPlatforms] = useState<string[]>([]);
-  const [selStyles, setSelStyles] = useState<string[]>([]);
-  const [selCountries, setSelCountries] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<"overlap" | "fit">("overlap");
-  const [selectedKol, setSelectedKol] = useState<string | null>(null);
-  const [dataSource] = useState<"youtube">("youtube");
-  const [apiData, setApiData] = useState<KOLType[]>([]);
-  const [apiLoading, setApiLoading] = useState(false);
+  const filtered = kolCollabs
+    .filter((k) => brandFilter === "all" || k.brandId === brandFilter)
+    .sort((a, b) => sortBy === "date"
+      ? new Date(b.date).getTime() - new Date(a.date).getTime()
+      : b.engagementRate - a.engagementRate);
 
-  const [committed, setCommitted] = useState<{ platforms: string[]; styles: string[]; countries: string[] }>({ platforms: [], styles: [], countries: [] });
-  const [presetGlow, setPresetGlow] = useState<Set<string>>(new Set());
-
-  // Fetch KOLs from YouTube API
-  useEffect(() => {
-    setApiLoading(true);
-    fetch("/api/kols/all?source=youtube&max=20")
-      .then((r) => r.json()).then((d) => { setApiData(d.items); setApiLoading(false); })
-      .catch(() => setApiLoading(false));
-  }, []);
-
-  const allKols = apiData.length > 0 ? apiData : mockKols; // fallback to mock on first load
-
-  // Sync strategy → filter panel
-  const [prevStrategyRef] = useState(() => activeStrategy?.id);
-  useEffect(() => {
-    if (brandPreset && activeStrategy && prevStrategyRef !== activeStrategy.id) {
-      setSelCountries([...activeStrategy.countries]);
-      setPresetGlow(new Set(["country"]));
-      const c = { platforms: selPlatforms, styles: selStyles, countries: [...activeStrategy.countries] };
-      setCommitted(c);
-    } else if (!brandPreset) {
-      setSelCountries([]); setPresetGlow(new Set());
-      setCommitted({ platforms: selPlatforms, styles: selStyles, countries: [] });
-    }
-  }, [brandPreset, activeStrategy]);
-
-  // Effective filter: strategy overrides when active
-  const effCountries = brandPreset && activeStrategy ? activeStrategy.countries : committed.countries;
-
-  const filtered = allKols
-    .filter((k) => committed.platforms.length === 0 || committed.platforms.includes(k.platform))
-    .filter((k) => committed.styles.length === 0 || k.contentStyleTags.some((s) => committed.styles.includes(s)))
-    .filter((k) => effCountries.length === 0 || effCountries.includes(k.audienceProfile.region as any))
-    .filter((k) => !search || k.handle.toLowerCase().includes(search.toLowerCase()) || k.displayName.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => sortBy === "overlap" ? b.audienceOverlap - a.audienceOverlap : b.brandFitScore - a.brandFitScore);
-
-  const activeCount = committed.platforms.length + committed.styles.length + committed.countries.length;
-  const kol = allKols.find((k) => k.id === selectedKol);
-
-  const matchKOLStrategy = (c: typeof committed): string | null => {
-    const arrEq = (a: string[], b: string[]) => a.length === b.length && a.every((v) => b.includes(v));
-    const match = strategies.find((s) => arrEq(c.countries, s.countries));
-    return match?.id || null;
-  };
-
-  const applyFilters = () => {
-    const c = { platforms: selPlatforms, styles: selStyles, countries: selCountries };
-    setCommitted(c);
-    if (!brandPreset) setActiveStrategy(matchKOLStrategy(c));
-  };
-  const resetFilters = () => { setSelPlatforms([]); setSelStyles([]); setSelCountries([]); setCommitted({ platforms: [], styles: [], countries: [] }); if (!brandPreset) setActiveStrategy(null); };
-  const removeChip = (gk: string, v: string) => {
-    const m: Record<string, [string[], (a: string[]) => void]> = { platform: [selPlatforms, setSelPlatforms], style: [selStyles, setSelStyles], country: [selCountries, setSelCountries] };
-    const [arr, setter] = m[gk] || [[], () => {}]; setter(arr.filter((x) => x !== v));
-  };
-
-  const filterGroups: FilterGroup[] = [
-    { key: "platform", label: "平台", selected: selPlatforms, onChange: setSelPlatforms, glow: false,
-      options: (["tiktok", "instagram", "youtube"] as Platform[]).map((p) => ({ value: p, label: platformLabel[p] })) },
-    { key: "style", label: "内容风格", selected: selStyles, onChange: setSelStyles, glow: false,
-      options: allContentStyles.map((s) => ({ value: s, label: styleLabel[s] })) },
-    { key: "country", label: "国家", selected: selCountries, onChange: setSelCountries, glow: presetGlow.has("country"),
-      options: (Object.keys(countryLabel) as Country[]).map((c) => ({ value: c, label: countryLabel[c] })) },
-  ];
-
-  const chipGroups = [
-    ...(brandPreset && activeStrategy ? [{ key: "brand-country" as string, label: "品牌·国家", activeValues: activeStrategy.countries.map((c) => ({ value: c, label: countryLabel[c] })) }] : []),
-    { key: "platform", label: "平台", activeValues: committed.platforms.map((v) => ({ value: v, label: platformLabel[v as Platform] })) },
-    { key: "style", label: "风格", activeValues: committed.styles.map((v) => ({ value: v, label: styleLabel[v as ContentStyle] })) },
-    { key: "country", label: "国家", activeValues: committed.countries.map((v) => ({ value: v, label: countryLabel[v as Country] })) },
-  ];
+  // Group by brand for summary
+  const brandKolCount: Record<string, number> = {};
+  kolCollabs.forEach((k) => { brandKolCount[k.brandId] = (brandKolCount[k.brandId] || 0) + 1; });
 
   return (
-    <FilterPanel groups={filterGroups} overlapValue={0} onOverlapChange={() => {}} onApply={applyFilters} onReset={resetFilters} activeCount={activeCount}>
-      <div className="space-y-6 max-w-5xl">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-50">KOL 发现</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            {brandPreset && activeStrategy
-              ? `按策略「${activeStrategy.name}」筛选 · ${activeStrategy.markets.map((m) => ({ US: "美国", UK: "英国", AU: "澳洲", SEA: "东南亚" }[m] || m)).join("·")}`
-              : "基于品牌受众画像，按受众重合度推荐创作者"}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative w-56">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-            <Input placeholder="搜索 KOL..." className="pl-9 h-8 text-sm border-slate-700 bg-slate-800/50" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-          {apiLoading && <Loader2 className="h-3 w-3 animate-spin text-amber-500" />}
-
-          <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
-            {(["overlap", "fit"] as const).map((s) => (
-              <button key={s} onClick={() => setSortBy(s)} className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", sortBy === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}>
-                {s === "overlap" ? "按重合度" : "按匹配分"}
-              </button>
-            ))}
-          </span>
-          {brandPreset && activeStrategy && <span className="text-xs text-amber-400 font-medium">◆ {activeStrategy.name}</span>}
-          <span className="text-xs text-slate-500 ml-auto">{filtered.length} 个结果</span>
-        </div>
-
-        <FilterChips groups={chipGroups} onRemove={removeChip} onClearAll={resetFilters} />
-
-        <div className="grid grid-cols-2 gap-4">
-          {filtered.map((k) => (
-            <Card key={k.id} className="border-slate-700 bg-slate-800/50 hover:border-amber-500/20 transition-colors cursor-pointer" onClick={() => setSelectedKol(k.id)}>
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  {k.avatarUrl ? <img src={k.avatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover border border-slate-700" /> : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-700 text-lg font-bold text-slate-200">{k.displayName.charAt(0)}</div>}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <a href={`https://youtube.com/${k.handle}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-slate-100 hover:text-amber-400 transition-colors">{k.handle}</a>
-                      <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{platformLabel[k.platform]}</Badge>
-                    </div>
-                    <p className="text-sm text-slate-400">{k.followers >= 1000 ? `${(k.followers / 1000).toFixed(0)}K` : k.followers} 粉丝 · 互动率 {k.avgEngagementRate}%</p>
-                  </div>
-                  <div className="flex flex-col items-center shrink-0">
-                    <OverlapBadge score={k.audienceOverlap} />
-                    <span className="text-2xl font-bold text-slate-100 mt-1">{k.brandFitScore}</span>
-                    <span className="text-xs text-slate-500">匹配分</span>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-3">
-                  {k.contentStyleTags.map((tag) => <Badge key={tag} variant="secondary" className="text-xs bg-slate-700 text-slate-300">{styleLabel[tag]}</Badge>)}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {filtered.length === 0 && (
-            <div className="col-span-2 text-center py-12 text-slate-500">
-              <p>暂无匹配 KOL</p>
-              <p className="text-sm mt-1">调整筛选条件或扩大粉丝量范围</p>
-            </div>
-          )}
-        </div>
-
-        <Sheet open={!!selectedKol} onOpenChange={(open) => !open && setSelectedKol(null)}>
-          <SheetContent className="w-[480px] sm:max-w-[480px] overflow-y-auto border-slate-700 bg-slate-900">
-            {kol && (
-              <>
-                <SheetHeader>
-                  <SheetTitle className="flex items-center gap-3 text-slate-50">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-700 text-xl font-bold text-slate-200">{kol.displayName.charAt(0)}</div>
-                    <div>
-                      <a href={`https://youtube.com/${kol.handle}`} target="_blank" rel="noopener noreferrer" className="text-lg text-slate-50 hover:text-amber-400 transition-colors">{kol.handle}</a>
-                      <div className="text-sm text-slate-400 font-normal">{platformLabel[kol.platform]} · {kol.followers >= 1000 ? `${(kol.followers / 1000).toFixed(0)}K` : kol.followers} 粉丝</div>
-                    </div>
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="mt-6 space-y-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="rounded-lg border border-slate-700 p-3 text-center"><div className="text-lg font-bold text-amber-400">{kol.brandFitScore}</div><div className="text-[10px] text-slate-500">品牌匹配度</div></div>
-                    <div className="rounded-lg border border-slate-700 p-3 text-center"><div className={cn("text-lg font-bold", kol.avgEngagementRate > 3 ? "text-emerald-400" : kol.avgEngagementRate > 1.5 ? "text-amber-400" : "text-slate-400")}>{kol.avgEngagementRate}%</div><div className="text-[10px] text-slate-500">真互动率</div></div>
-                    <div className="rounded-lg border border-slate-700 p-3 text-center"><div className="text-lg font-bold text-slate-100">{kol.followers >= 1000000 ? `${(kol.followers / 1000000).toFixed(1)}M` : `${(kol.followers / 1000).toFixed(0)}K`}</div><div className="text-[10px] text-slate-500">订阅</div></div>
-                  </div>
-                  <Separator className="bg-slate-700" />
-                  <div><h4 className="text-sm font-medium text-slate-200 mb-2">内容风格</h4><div className="flex flex-wrap gap-1">{kol.contentStyleTags.map((tag) => <Badge key={tag} variant="secondary" className="bg-slate-700 text-slate-300">{styleLabel[tag]}</Badge>)}</div></div>
-                  <div><h4 className="text-sm font-medium text-slate-200 mb-2">受众画像</h4><p className="text-sm text-slate-400">{kol.audienceProfile.age} · {kol.audienceProfile.gender} · {kol.audienceProfile.region}</p><p className="text-sm text-slate-500 mt-1">兴趣: {kol.audienceProfile.interests.join(" · ")}</p></div>
-                  {kol.recentViralPosts && kol.recentViralPosts.length > 0 && (
-                    <>
-                      <Separator className="bg-slate-700" />
-                      <div>
-                        <div className="flex items-center gap-2 mb-3"><BarChart3 className="h-4 w-4 text-amber-500" /><h4 className="text-sm font-medium text-slate-200">近期内容互动量</h4></div>
-                        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-2">
-                          <ResponsiveContainer width="100%" height={140}>
-                            <BarChart data={kol.recentViralPosts} layout="vertical" margin={{ top: 0, right: 12, left: -20, bottom: 0 }}>
-                              <XAxis type="number" tick={false} axisLine={false} />
-                              <YAxis type="category" dataKey="postTitle" tick={{ fontSize: 11, fill: "#94A3B8" }} width={100} axisLine={false} tickLine={false} />
-                              <Tooltip contentStyle={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "8px", fontSize: "12px", color: "#F8FAFC" }} formatter={(value) => [`${(Number(value) / 1000).toFixed(0)}K`, "互动"]} />
-                              <Bar dataKey="engagement" fill="#F59E0B" radius={[0, 4, 4, 0]} barSize={16} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  {kol.brandCollabHistory.length > 0 && (
-                    <>
-                      <Separator className="bg-slate-700" />
-                      <div><h4 className="text-sm font-medium text-slate-200 mb-2">品牌合作历史</h4>
-                        {kol.brandCollabHistory.map((h, i) => (
-                          <div key={i} className="flex items-center gap-2 text-sm text-slate-400 mb-1"><Badge variant="outline" className="text-xs border-slate-600 text-slate-300">{h.brand}</Badge><span>{h.type} · {h.date}</span></div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  <Separator className="bg-slate-700" />
-
-                  {/* Brand safety + content quality */}
-                  <div>
-                    <h4 className="text-sm font-medium text-slate-200 mb-2">品牌适配评估</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(() => {
-                        const collabCount = kol.brandCollabHistory.length;
-                        const safetyScore = collabCount > 0 ? 85 + collabCount * 3 : 75;
-                        const qualityScore = Math.round(kol.avgEngagementRate * 15 + (kol.audienceOverlap / 10));
-                        const recentViral = kol.recentViralPosts && kol.recentViralPosts.length > 0 ? kol.recentViralPosts.length : 0;
-                        return (
-                          <>
-                            <div className="rounded-lg border border-slate-700 p-2 text-center">
-                              <div className={cn("text-sm font-bold", safetyScore >= 90 ? "text-emerald-400" : "text-amber-400")}>{safetyScore}</div>
-                              <div className="text-[10px] text-slate-500">品牌安全</div>
-                            </div>
-                            <div className="rounded-lg border border-slate-700 p-2 text-center">
-                              <div className="text-sm font-bold text-blue-400">{qualityScore}</div>
-                              <div className="text-[10px] text-slate-500">内容质量</div>
-                            </div>
-                            <div className="rounded-lg border border-slate-700 p-2 text-center">
-                              <div className={cn("text-sm font-bold", recentViral >= 2 ? "text-emerald-400" : "text-slate-400")}>{recentViral}条</div>
-                              <div className="text-[10px] text-slate-500">近期爆款</div>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                    {kol.brandCollabHistory.length > 0 && (
-                      <div className="mt-2 rounded-lg border border-slate-700 bg-slate-800/50 p-2">
-                        <div className="text-[10px] text-slate-500 mb-1">合作品牌: {kol.brandCollabHistory.map((h) => h.brand).join(" · ")}</div>
-                        <div className="text-[10px] text-slate-500">最近合作: {kol.brandCollabHistory[kol.brandCollabHistory.length - 1]?.date}</div>
-                      </div>
-                    )}
-                  </div>
-
-                  <Separator className="bg-slate-700" />
-
-                  {/* ROI metrics */}
-                  <div>
-                    <h4 className="text-sm font-medium text-slate-200 mb-2">ROI 预估</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(() => {
-                        const avgCost = (kol.estimatedCostRange.min + kol.estimatedCostRange.max) / 2;
-                        const estExposure = kol.followers * 0.15;
-                        const cpm = Math.round(avgCost / (estExposure / 1000));
-                        const estEngagement = Math.round(kol.followers * kol.avgEngagementRate / 100);
-                        const engagementROI = (estEngagement / avgCost).toFixed(2);
-                        const matchPremium = (kol.audienceOverlap * kol.avgEngagementRate / Math.max(cpm, 1)).toFixed(1);
-                        return (
-                          <>
-                            <div className="rounded-lg border border-slate-700 p-2 text-center">
-                              <div className="text-sm font-bold text-amber-400">${cpm}</div>
-                              <div className="text-[10px] text-slate-500">CPM</div>
-                            </div>
-                            <div className="rounded-lg border border-slate-700 p-2 text-center">
-                              <div className="text-sm font-bold text-emerald-400">{engagementROI}</div>
-                              <div className="text-[10px] text-slate-500">互动ROI</div>
-                            </div>
-                            <div className="rounded-lg border border-slate-700 p-2 text-center">
-                              <div className="text-sm font-bold text-blue-400">{matchPremium}</div>
-                              <div className="text-[10px] text-slate-500">匹配溢价</div>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  <Separator className="bg-slate-700" />
-                  <div>
-                    <h4 className="text-sm font-medium text-slate-200 mb-2">预估合作费用</h4>
-                    <p className="text-lg font-bold text-slate-100">${kol.estimatedCostRange.min.toLocaleString()} - ${kol.estimatedCostRange.max.toLocaleString()}<span className="text-sm font-normal text-slate-500">/条</span></p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">基于订阅数 × 平均播放 × 内容类型费率 × 互动率因子</p>
-                  </div>
-                  <div className="flex gap-2 pt-2"><Button className="flex-1 gap-1 bg-amber-500 text-black hover:bg-amber-400"><Star className="h-4 w-4" /> 收藏到品牌KOL库</Button><Button variant="outline" className="gap-1 border-slate-700 text-slate-300">导出报告</Button></div>
-                </div>
-              </>
-            )}
-          </SheetContent>
-        </Sheet>
+    <div className="space-y-5 max-w-5xl">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-50">KOL 合作追踪</h1>
+        <p className="mt-0.5 text-sm text-slate-400">追踪竞品品牌在 TikTok/Instagram/Facebook 上的 KOL 合作动态</p>
       </div>
-    </FilterPanel>
+
+      {/* Brand filter + sort */}
+      <div className="rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-2.5 space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-slate-500 shrink-0 mr-0.5">品牌:</span>
+          <button
+            onClick={() => setBrandFilter("all")}
+            className={cn("px-2.5 py-1 text-sm rounded-md transition-colors", brandFilter === "all" ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}
+          >
+            全部 ({kolCollabs.length})
+          </button>
+          {competitorBrands.map((b) => (
+            <button
+              key={b.id}
+              onClick={() => setBrandFilter(b.id)}
+              className={cn(
+                "px-2.5 py-1 text-sm rounded-md transition-colors flex items-center gap-1.5",
+                brandFilter === b.id ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300"
+              )}
+            >
+              <span className={cn("h-2 w-2 rounded-full shrink-0", brandColorMap[b.id])} />
+              {b.name} ({brandKolCount[b.id] || 0})
+            </button>
+          ))}
+          <span className="text-slate-700 mx-2">|</span>
+          <span className="text-xs text-slate-500 shrink-0">排序:</span>
+          {(["date", "engagement"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setSortBy(s)}
+              className={cn("px-2.5 py-1 text-sm rounded-md transition-colors", sortBy === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}
+            >
+              {s === "date" ? "最新" : "互动率最高"}
+            </button>
+          ))}
+          <span className="ml-auto text-xs text-slate-500">{filtered.length} 个合作</span>
+        </div>
+      </div>
+
+      {/* KOL cards */}
+      <div className="space-y-3">
+        {filtered.map((k) => {
+          const brand = competitorBrands.find((b) => b.id === k.brandId);
+          return (
+            <div key={k.id} className="rounded-xl border border-slate-700 bg-slate-800/40 overflow-hidden group hover:border-amber-500/20 transition-colors">
+              <div className="flex items-start gap-4 p-4">
+                {/* KOL avatar placeholder */}
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-700 text-base font-bold text-slate-300">
+                  {k.kolName.charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <h3 className="font-semibold text-slate-100">{k.kolHandle}</h3>
+                    <span className="text-sm text-slate-500">{k.kolName}</span>
+                    <Badge variant="outline" className="text-xs border-slate-700 text-slate-400">
+                      {platformLabel[k.platform]}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
+                    <span>{(k.followers / 10000).toFixed(0)}万 粉丝</span>
+                    <span>{k.contentStyle}</span>
+                    <span className="flex items-center gap-1 text-emerald-400">
+                      <TrendingUp className="h-3 w-3" />
+                      互动率 {k.engagementRate}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <span className={cn("h-2 w-2 rounded-full shrink-0", brandColorMap[k.brandId])} />
+                    <span className="text-sm text-slate-400">
+                      合作品牌: <span className="text-slate-300">{k.brandName}</span>
+                    </span>
+                    <span className="text-slate-600">·</span>
+                    <span className="text-sm text-slate-500">{k.date}</span>
+                  </div>
+                  <p className="text-sm text-slate-300 mt-1.5">{k.content}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div className="text-center py-12 text-slate-500">
+            <Users className="h-8 w-8 mx-auto mb-2 text-slate-600" />
+            <p>该品牌暂无KOL合作数据</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

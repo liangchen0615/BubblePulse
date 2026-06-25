@@ -17,10 +17,10 @@ const regionCountries: Record<Market, Country[]> = {
   SEA: ["SG", "MY", "TH", "ID", "PH", "VN", "JP", "KR", "CN"],
 };
 const typeOptions = [
-  { value: "holiday", label: "节日" }, { value: "festival", label: "音乐节" },
-  { value: "sports", label: "赛事" }, { value: "cultural", label: "文化" },
+  { value: "expo", label: "展会" }, { value: "conference", label: "峰会" },
+  { value: "trade", label: "交易会" }, { value: "festival", label: "行业节庆" },
 ];
-const typeIcon: Record<string, string> = { sports: "🏈", festival: "🎵", holiday: "🎆", cultural: "🎋" };
+const typeIcon: Record<string, string> = { expo: "🏟", conference: "🎤", trade: "🤝", festival: "🎪" };
 
 export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
@@ -40,7 +40,7 @@ export default function CalendarPage() {
   const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 
   const openNew = () => {
-    setEditing({ id: `cal-${Date.now()}`, date: "2026-01-01", region, country: regionCountries[region][0] || "US", name: "", type: "cultural", suggestion: "" });
+    setEditing({ id: `cal-${Date.now()}`, date: "2026-01-01", region, country: regionCountries[region][0] || "US", name: "", type: "expo", suggestion: "" });
     setEditOpen(true);
   };
   const openEdit = (ev: CalendarEvent) => { setEditing({ ...ev }); setEditOpen(true); };
@@ -54,7 +54,7 @@ export default function CalendarPage() {
     setEditOpen(false);
   };
   const deleteEvent = (id: string) => {
-    if (!confirm("删除此营销节点？")) return;
+    if (!confirm("删除此行业节点？")) return;
     setEvents((prev) => prev.filter((e) => e.id !== id));
   };
 
@@ -62,8 +62,8 @@ export default function CalendarPage() {
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-50">营销日历</h1>
-          <p className="mt-1 text-sm text-slate-400">按地区展示可预测的重要文化节点。可自行添加编辑。</p>
+          <h1 className="text-2xl font-bold text-slate-50">行业日历</h1>
+          <p className="mt-1 text-sm text-slate-400">食品饮料行业重要展会、峰会和交易会时间表。可自行添加编辑。</p>
         </div>
         <Button variant="outline" size="sm" className="gap-1 border-amber-500/30 text-amber-400 text-xs h-8" onClick={openNew}>
           <Plus className="h-3.5 w-3.5" /> 新建节点
@@ -130,7 +130,7 @@ export default function CalendarPage() {
         {filtered.length === 0 && (
           <div className="text-center py-12 text-slate-500">
             <Calendar className="h-8 w-8 mx-auto mb-2 text-slate-600" />
-            <p>该地区暂无营销节点</p>
+            <p>该地区暂无行业节点</p>
             <Button variant="outline" size="sm" className="mt-3 gap-1 border-slate-700 text-slate-400 text-xs" onClick={openNew}><Plus className="h-3.5 w-3.5" /> 新建节点</Button>
           </div>
         )}
@@ -174,7 +174,7 @@ export default function CalendarPage() {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-200">茶饮关联建议</label>
+                <label className="text-sm font-medium text-slate-200">行业关联</label>
                 <Input value={editing.suggestion} onChange={(e) => setEditing({ ...editing, suggestion: e.target.value })} placeholder="如：限定套餐 + 主题杯身" className="mt-1.5 border-slate-700 bg-slate-800 text-slate-100 h-9" />
               </div>
               <div className="flex gap-2 pt-4">

@@ -1,244 +1,150 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { FilterPanel, FilterChips, type FilterGroup } from "@/components/layout/filter-panel";
-import { useBrandPreset } from "@/lib/brand-context";
-import { ips as mockIps } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
-import { TrendingUp, TrendingDown, Minus, Zap, AlertCircle, Search } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import type { Feasibility, IpCategory, IP } from "@/types";
+import { competitorBrands } from "@/lib/competitor-data";
+import { Target, TrendingUp } from "lucide-react";
 
-const categoryLabel: Record<IpCategory, string> = { anime: "Anime", game: "Game", movie: "Movie", character: "Character", meme: "Meme" };
-const allCategories: IpCategory[] = ["anime", "game", "movie", "character", "meme"];
+const brandColorMap: Record<string, string> = {
+  "br1": "bg-emerald-500",
+  "br2": "bg-red-500",
+  "br3": "bg-blue-500",
+  "br4": "bg-amber-500",
+};
 
-function FeasibilityBadge({ feasibility }: { feasibility: Feasibility }) {
-  const c = { high: "border-emerald-500/50 text-emerald-400 bg-emerald-500/10", medium: "border-amber-500/50 text-amber-400 bg-amber-500/10", low: "border-red-500/50 text-red-400 bg-red-500/10" };
-  const l = feasibility === "high" ? "高可行性" : feasibility === "medium" ? "中可行性" : "低可行性";
-  return <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium", c[feasibility])}>{l}</span>;
+interface IPCollab {
+  id: string;
+  ipName: string;
+  ipCategory: string;
+  brandId: string;
+  brandName: string;
+  date: string;
+  description: string;
+  platform: string;
+  heat: "高" | "中" | "低";
+  socialImpression: string;
 }
-function TrendIcon({ direction }: { direction: "up" | "stable" | "down" }) {
-  if (direction === "up") return <TrendingUp className="h-4 w-4 text-emerald-400" />;
-  if (direction === "down") return <TrendingDown className="h-4 w-4 text-red-400" />;
-  return <Minus className="h-4 w-4 text-slate-500" />;
-}
-function OverlapBadge({ score }: { score: number }) {
-  const c = score >= 70 ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10" : score >= 55 ? "border-amber-500/50 text-amber-400 bg-amber-500/10" : "border-blue-400/50 text-blue-400 bg-blue-400/10";
-  return <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium shrink-0", c)}>{score}% 重合</span>;
-}
+
+const ipCollabs: IPCollab[] = [
+  // 喜茶 collabs
+  { id: "ip1", ipName: "NBA", ipCategory: "体育赛事", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-06-11", description: "NBA总决赛联名系列：撞色限定杯身+球队主题特调", platform: "Instagram", heat: "高", socialImpression: "百万级话题曝光，美国市场品牌认知度显著提升" },
+  { id: "ip2", ipName: "纽约Soho商业区", ipCategory: "地标/商业IP", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-05-20", description: "纽约Soho首店开业联动：门店设计融入Soho艺术街区美学", platform: "Instagram", heat: "高", socialImpression: "纽约本地媒体和KOL自发传播，开业首周排队现象成为内容热点" },
+
+  // 蜜雪冰城 collabs
+  { id: "ip3", ipName: "Hello Kitty", ipCategory: "卡通角色", brandId: "br2", brandName: "蜜雪冰城 MIXUE", date: "2026-04-20", description: "Hello Kitty联名杯+周边套装，粉色主题限定", platform: "Instagram", heat: "高", socialImpression: "女性消费者社交分享爆发，东南亚市场尤其活跃" },
+  { id: "ip4", ipName: "越南胡志明市", ipCategory: "城市/文化IP", brandId: "br2", brandName: "蜜雪冰城 MIXUE", date: "2026-06-14", description: "胡志明市首店 × 本地文化IP：门店设计融入越南街头文化元素", platform: "TikTok", heat: "高", socialImpression: "越南TikTok探店UGC爆发，单日话题播放量破千万" },
+
+  // 瑞幸 collabs
+  { id: "ip5", ipName: "贵州茅台", ipCategory: "品牌IP", brandId: "br3", brandName: "瑞幸 Luckin", date: "2026-04-12", description: "茅台联名第二弹：酱香拿铁限定返场+新口味拓展", platform: "Instagram", heat: "高", socialImpression: "第一次联名话题度延续，二次联名社会讨论度依然高企" },
+  { id: "ip6", ipName: "新加坡", ipCategory: "城市/文化IP", brandId: "br3", brandName: "瑞幸 Luckin", date: "2026-05-05", description: "新加坡第20店 × 狮城文化IP：本土化限定口味+城市主题杯身", platform: "TikTok", heat: "中", socialImpression: "新加坡本地媒体自发报道，东南亚市场扩张信号" },
+
+  // CHAGEE collabs
+  { id: "ip7", ipName: "云南茶文化", ipCategory: "文化IP", brandId: "br4", brandName: "CHAGEE 霸王茶姬", date: "2026-06-15", description: "茶叶产地溯源纪录片系列×云南茶山文化：从云南到全球的品牌故事", platform: "TikTok", heat: "中", socialImpression: "品牌文化深度内容，受众粘性高于产品推新内容" },
+  { id: "ip8", ipName: "东方美学", ipCategory: "文化IP", brandId: "br4", brandName: "CHAGEE 霸王茶姬", date: "2026-06-08", description: "创始人故事×东方美学IP：'从云南茶山到全球化'品牌叙事系列", platform: "TikTok", heat: "中", socialImpression: "品牌辨识度内容策略，与高频推新形成差异化" },
+  { id: "ip9", ipName: "菲律宾文化节日", ipCategory: "节庆IP", brandId: "br4", brandName: "CHAGEE 霸王茶姬", date: "2026-04-05", description: "菲律宾本地文化节日联名：当地IP合作+传统元素限定杯身", platform: "TikTok", heat: "低", socialImpression: "本地化策略试水，在菲律宾市场获得基础品牌认知" },
+];
+
+const heatBadge: Record<string, string> = { "高": "bg-red-500/20 text-red-400", "中": "bg-amber-500/20 text-amber-400", "低": "bg-slate-500/20 text-slate-400" };
 
 export default function IpTrackerPage() {
-  const { brandPreset, activeStrategy } = useBrandPreset();
-  const [selCategories, setSelCategories] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<"overlap" | "heat">("overlap");
-  const [search, setSearch] = useState("");
-  const [dataSource] = useState<"mock" | "merged" | "wikipedia">("wikipedia");
-  const [apiData, setApiData] = useState<IP[]>([]);
-  const [apiLoading, setApiLoading] = useState(false);
-  const [selectedIp, setSelectedIp] = useState<IP | null>(null);
-  const [committed, setCommitted] = useState<string[]>([]);
+  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  const fetchIps = () => {
-    if (dataSource === "mock") { setApiData([]); return; }
-    setApiLoading(true);
-    fetch(`/api/ips/all?source=${dataSource}&max=8`)
-      .then((r) => r.json()).then((d) => { setApiData(d.items); setApiLoading(false); })
-      .catch(() => setApiLoading(false));
-  };
-  useEffect(() => { fetchIps(); }, [dataSource]);
+  const categories = ["all", ...new Set(ipCollabs.map((ip) => ip.ipCategory))];
 
-  // Fetch Wikipedia thumbnails for IPs without imageUrl
-  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
-  useEffect(() => {
-    for (const ip of [...mockIps, ...apiData]) {
-      if (!ip.imageUrl && !thumbnails[ip.id]) {
-        fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(ip.name)}`)
-          .then((r) => r.json()).then((d) => {
-            if (d.thumbnail?.source) {
-              setThumbnails((prev) => ({ ...prev, [ip.id]: d.thumbnail.source }));
-            }
-          }).catch(() => {});
-      }
-    }
-  }, [apiData]);
+  const filtered = ipCollabs
+    .filter((ip) => brandFilter === "all" || ip.brandId === brandFilter)
+    .filter((ip) => categoryFilter === "all" || ip.ipCategory === categoryFilter)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const allIps = dataSource === "mock" ? mockIps : (apiData.length > 0 ? apiData : mockIps);
-
-  const filtered = allIps
-    .filter((ip) => (brandPreset ? ip.audienceOverlap >= 55 : true))
-    .filter((ip) => committed.length === 0 || committed.includes(ip.category))
-    .filter((ip) => !search || ip.name.toLowerCase().includes(search.toLowerCase()) || ip.category.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => sortBy === "overlap" ? b.audienceOverlap - a.audienceOverlap : b.heatScore - a.heatScore);
-
-  const applyFilters = () => setCommitted(selCategories);
-  const resetFilters = () => { setSelCategories([]); setCommitted([]); };
-  const removeChip = (_gk: string, v: string) => { setSelCategories((s) => s.filter((x) => x !== v)); };
-
-  const filterGroups: FilterGroup[] = [{
-    key: "category", label: "IP 类型", selected: selCategories, onChange: setSelCategories, glow: false,
-    options: allCategories.map((c) => ({ value: c, label: categoryLabel[c] })),
-  }];
-
-  const chipGroups = [{ key: "category", label: "类型", activeValues: committed.map((v) => ({ value: v, label: categoryLabel[v as IpCategory] })) }];
+  const brandIpCount: Record<string, number> = {};
+  ipCollabs.forEach((ip) => { brandIpCount[ip.brandId] = (brandIpCount[ip.brandId] || 0) + 1; });
 
   return (
-    <FilterPanel groups={filterGroups} overlapValue={0} onOverlapChange={() => {}} onApply={applyFilters} onReset={resetFilters} activeCount={committed.length}>
-      <div className="space-y-6 max-w-4xl">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-50">IP 联动追踪</h1>
-          <p className="mt-1 text-sm text-slate-400">IP 决策周期 3-12 个月，不同于短视频热点。按受众重合度筛选。</p>
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-            <Input placeholder="搜索 IP..." className="pl-9 h-8 text-sm border-slate-700 bg-slate-800/50" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-
-          <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
-            {(["overlap", "heat"] as const).map((s) => (
-              <button key={s} onClick={() => setSortBy(s)} className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", sortBy === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}>
-                {s === "overlap" ? "按重合度" : "按热度"}
-              </button>
-            ))}
-          </span>
-          {brandPreset && activeStrategy && <span className="text-xs text-amber-400 font-medium">◆ {activeStrategy.name} · 重合≥55%</span>}
-          <span className="text-xs text-slate-500 ml-auto">{filtered.length} 个 IP</span>
-        </div>
-
-        <FilterChips groups={chipGroups} onRemove={removeChip} onClearAll={resetFilters} />
-
-        <div className="space-y-3">
-          {filtered.map((ip) => {
-            const isOpportunity = ip.feasibility === "high" && !ip.competitorOccupied;
-            const isCrowded = ip.feasibility !== "low" && ip.competitorOccupied;
-            return (
-              <Card key={ip.id} className={cn("border-slate-700 bg-slate-800/50 hover:border-amber-500/20 transition-colors cursor-pointer", isOpportunity && "border-l-2 border-l-emerald-500", isCrowded && "border-l-2 border-l-amber-500")} onClick={() => setSelectedIp(ip)}>
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    {(ip.imageUrl || thumbnails[ip.id]) ? (
-                      <img src={ip.imageUrl || thumbnails[ip.id]} alt={ip.name} className="h-14 w-14 shrink-0 rounded-lg object-cover border border-slate-700" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    ) : (
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-lg font-bold text-amber-400 border border-amber-500/20">
-                        {ip.name.charAt(0)}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-semibold text-slate-100 text-lg">{ip.name}</h3>
-                        <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{categoryLabel[ip.category]}</Badge>
-                        <FeasibilityBadge feasibility={ip.feasibility} />
-                      </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="flex items-center gap-1 text-slate-400">热度 <span className="font-bold text-slate-100">{ip.heatScore}</span><TrendIcon direction={ip.trendDirection} /></span>
-                        <span className="text-slate-500">受众: {ip.audienceProfile}</span>
-                      </div>
-                      <div className="mt-2 flex items-center gap-2 flex-wrap">
-                        {ip.competitorOccupied
-                          ? <span className="inline-flex items-center gap-1 text-xs text-amber-400"><AlertCircle className="h-3 w-3" />竞品已占用</span>
-                          : <span className="inline-flex items-center gap-1 text-xs text-emerald-400"><Zap className="h-3 w-3" />首发机会</span>}
-                      </div>
-                      {ip.collabPrecedents.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {ip.collabPrecedents.map((p, i) => (
-                            p.url ? (
-                              <a key={i} href={p.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                                <Badge className="text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 cursor-pointer">{p.brand} · {p.year} · {p.description}{p.socialImpression !== "N/A" && ` (${p.socialImpression})`}</Badge>
-                              </a>
-                            ) : (
-                              <Badge key={i} variant="secondary" className="text-xs bg-slate-700 text-slate-300">{p.brand} · {p.year} · {p.description}{p.socialImpression !== "N/A" && ` (${p.socialImpression})`}</Badge>
-                            )
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* IP Detail Sheet */}
-        <Sheet open={!!selectedIp} onOpenChange={(open) => !open && setSelectedIp(null)}>
-          <SheetContent className="w-[520px] sm:max-w-[520px] overflow-y-auto border-slate-700 bg-slate-900">
-            {selectedIp && (() => {
-              const ipEvents = selectedIp.collabPrecedents.length > 0
-                ? selectedIp.collabPrecedents.map((p, j) => ({ day: 6 + j * 10, label: `${p.brand} ${p.description}`, boost: 15 + j * 3 }))
-                : [{ day: 8, label: "社交媒体热度上升", boost: 10 }, { day: 20, label: "粉丝二创传播", boost: 8 }];
-              const trendData = Array.from({ length: 30 }, (_, i) => {
-                const base = selectedIp.heatScore;
-                const noise = Math.sin(i / 5) * 5 + (Math.random() * 4 - 2);
-                const eventBoost = ipEvents.reduce((sum, ev) => sum + (i >= ev.day - 1 && i <= ev.day + 1 ? ev.boost * Math.max(0, 1 - Math.abs(i - ev.day) / 2) : 0), 0);
-                const score = Math.max(0, Math.min(100, Math.round(base + noise + eventBoost)));
-                const date = new Date(Date.now() - (29 - i) * 86400000);
-                const nearEvent = ipEvents.find((ev) => Math.abs(i - ev.day) <= 1);
-                return { day: `${date.getMonth() + 1}/${date.getDate()}`, score, label: nearEvent?.label || "" };
-              });
-              const avgScore = Math.round(trendData.reduce((s, d) => s + d.score, 0) / trendData.length);
-              const pulseCount = trendData.filter((d) => d.score > avgScore + 10).length;
-              const pulseFreq = pulseCount >= 8 ? "高频" : pulseCount >= 4 ? "中频" : "低频";
-
-              return (
-                <>
-                  <SheetHeader>
-                    <SheetTitle className="text-slate-50 text-lg">{selectedIp.name}</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6 space-y-4">
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="rounded-lg border border-slate-700 p-3 text-center"><div className="text-lg font-bold text-amber-400">{selectedIp.heatScore}</div><div className="text-xs text-slate-500">当前热度</div></div>
-                      <div className="rounded-lg border border-slate-700 p-3 text-center"><div className="text-lg font-bold text-slate-100">{avgScore}</div><div className="text-xs text-slate-500">30天均值</div></div>
-                      <div className="rounded-lg border border-slate-700 p-3 text-center"><div className={cn("text-lg font-bold", pulseFreq === "高频" ? "text-emerald-400" : pulseFreq === "中频" ? "text-amber-400" : "text-slate-400")}>{pulseFreq}</div><div className="text-xs text-slate-500">脉冲频率</div></div>
-                    </div>
-
-                    <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                      <h4 className="text-sm font-medium text-slate-200 mb-3">30天热度趋势</h4>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <AreaChart data={trendData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                          <defs><linearGradient id="ipHeatGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#F59E0B" stopOpacity={0.3} /><stop offset="100%" stopColor="#F59E0B" stopOpacity={0} /></linearGradient></defs>
-                          <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#64748B" }} interval={4} axisLine={false} tickLine={false} />
-                          <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#64748B" }} axisLine={false} tickLine={false} />
-                          <Tooltip contentStyle={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "8px", fontSize: "12px", color: "#F8FAFC" }} />
-                          <ReferenceLine y={avgScore} stroke="#475569" strokeDasharray="4 4" label={{ value: `均值 ${avgScore}`, position: "right", fontSize: 10, fill: "#64748B" }} />
-                          <Area type="monotone" dataKey="score" stroke="#F59E0B" fill="url(#ipHeatGrad)" strokeWidth={2} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                      <h4 className="text-sm font-medium text-slate-200 mb-2">热度波动事件</h4>
-                      <div className="space-y-1.5">
-                        {ipEvents.map((ev, i) => (
-                          <div key={i} className="flex items-center gap-2 text-xs">
-                            <span className="text-amber-400 font-mono w-12">{trendData[ev.day]?.day || `D+${ev.day}`}</span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                            <span className="text-slate-300">{ev.label}</span>
-                            <span className="text-emerald-400 ml-auto">+{ev.boost}热度</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-                      <h4 className="text-sm font-medium text-amber-300 mb-1">联动建议</h4>
-                      <p className="text-xs text-slate-400">
-                        {pulseFreq === "高频" ? "该IP持续高热，适合随时启动联动。关注大版本/事件窗口以获得最大曝光。" :
-                         pulseFreq === "中频" ? "该IP有周期性热度，建议在脉冲事件前后2周内启动联动。" :
-                         "该IP热度偏低，建议观望等待下一个脉冲窗口。"}
-                      </p>
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
-          </SheetContent>
-        </Sheet>
+    <div className="space-y-5 max-w-5xl">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-50">IP 联动追踪</h1>
+        <p className="mt-0.5 text-sm text-slate-400">追踪竞品品牌的 IP 联名合作动态 · 发现 IP 合作趋势和空白机会</p>
       </div>
-    </FilterPanel>
+
+      {/* Filter bar */}
+      <div className="rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-2.5 space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-slate-500 shrink-0 mr-0.5">品牌:</span>
+          <button
+            onClick={() => setBrandFilter("all")}
+            className={cn("px-2.5 py-1 text-sm rounded-md transition-colors", brandFilter === "all" ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}
+          >
+            全部 ({ipCollabs.length})
+          </button>
+          {competitorBrands.map((b) => (
+            <button
+              key={b.id}
+              onClick={() => setBrandFilter(b.id)}
+              className={cn(
+                "px-2.5 py-1 text-sm rounded-md transition-colors flex items-center gap-1.5",
+                brandFilter === b.id ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300"
+              )}
+            >
+              <span className={cn("h-2 w-2 rounded-full shrink-0", brandColorMap[b.id])} />
+              {b.name} ({brandIpCount[b.id] || 0})
+            </button>
+          ))}
+          <span className="text-slate-700 mx-2">|</span>
+          <span className="text-xs text-slate-500 shrink-0">IP类型:</span>
+          {categories.map((c) => (
+            <button
+              key={c}
+              onClick={() => setCategoryFilter(c)}
+              className={cn("px-2.5 py-1 text-sm rounded-md transition-colors", categoryFilter === c ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}
+            >
+              {c === "all" ? "全部" : c}
+            </button>
+          ))}
+          <span className="ml-auto text-xs text-slate-500">{filtered.length} 个联名</span>
+        </div>
+      </div>
+
+      {/* IP cards */}
+      <div className="grid grid-cols-2 gap-3">
+        {filtered.map((ip) => (
+          <div key={ip.id} className="rounded-xl border border-slate-700 bg-slate-800/40 overflow-hidden group hover:border-amber-500/20 transition-colors p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-700 text-lg">
+                {ip.ipCategory === "体育赛事" ? "🏈" : ip.ipCategory === "卡通角色" ? "🐱" : ip.ipCategory === "品牌IP" ? "🍶" : ip.ipCategory === "文化IP" ? "🎋" : ip.ipCategory === "节庆IP" ? "🎪" : ip.ipCategory === "城市/文化IP" ? "🏙" : ip.ipCategory === "地标/商业IP" ? "🏢" : "📌"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <h3 className="font-semibold text-slate-100">{ip.ipName}</h3>
+                  <Badge variant="outline" className="text-xs border-slate-700 text-slate-400">{ip.ipCategory}</Badge>
+                  <span className={cn("text-[10px] px-1 py-0.5 rounded shrink-0", heatBadge[ip.heat])}>
+                    {ip.heat === "高" ? "🔥" : ""} {ip.heat}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-400 line-clamp-2">{ip.description}</p>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <span className={cn("h-2 w-2 rounded-full shrink-0", brandColorMap[ip.brandId])} />
+                  <span className="text-sm text-slate-500">
+                    合作: <span className="text-slate-300">{ip.brandName}</span>
+                  </span>
+                  <span className="text-slate-600">·</span>
+                  <span className="text-sm text-slate-500">{ip.date}</span>
+                  <span className="text-slate-600">·</span>
+                  <Badge variant="outline" className="text-[10px] border-slate-700 text-slate-500">{ip.platform}</Badge>
+                </div>
+                <p className="text-xs text-amber-400/70 mt-2">{ip.socialImpression}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {filtered.length === 0 && (
+        <div className="text-center py-12 text-slate-500">
+          <Target className="h-8 w-8 mx-auto mb-2 text-slate-600" />
+          <p>该筛选条件下无IP联名数据</p>
+        </div>
+      )}
+    </div>
   );
 }

@@ -149,7 +149,7 @@ export interface CalendarEvent {
   region: Market;
   country: Country;
   name: string;
-  type: "cultural" | "sports" | "holiday" | "festival";
+  type: "cultural" | "sports" | "holiday" | "festival" | "expo" | "conference" | "trade";
   suggestion: string;
 }
 
@@ -174,6 +174,45 @@ export interface CompetitorBrand {
   recentPostCount: number;
   postChange: number; // percentage
   engagementRate: number;
+}
+
+export type TrendCategory = "ingredient" | "category" | "regional" | "strategy";
+
+export interface TrendEvidence {
+  brand?: string;
+  platform: Platform;
+  date: string;
+  content: string;
+}
+
+// Sub-categories per main dimension
+export type IngredientSubCategory = "coffee_tea" | "fruit" | "dairy";
+export type CategorySubCategory = "tea_drink" | "coffee" | "functional" | "prepared_food";
+export type RegionalSubCategory = "north_america" | "sea" | "europe" | "middle_east";
+export type StrategySubCategory = "content" | "expansion" | "pricing";
+export type TrendSubCategory = IngredientSubCategory | CategorySubCategory | RegionalSubCategory | StrategySubCategory;
+
+export const subCategoryLabel: Record<TrendSubCategory, string> = {
+  coffee_tea: "咖啡/茶底", fruit: "水果风味", dairy: "乳制品/替代乳",
+  tea_drink: "新茶饮", coffee: "咖啡", functional: "功能性饮品", prepared_food: "预制食品",
+  north_america: "北美", sea: "东南亚", europe: "欧洲", middle_east: "中东",
+  content: "内容策略", expansion: "扩张策略", pricing: "定价策略",
+};
+
+export interface TrendTopic {
+  id: string;
+  category: TrendCategory;
+  subCategory: TrendSubCategory;
+  title: string;
+  description: string;
+  discussionVolume: number;       // estimated monthly posts
+  growthRate: number;             // percentage change
+  platforms: { tiktok: number; instagram: number; facebook: number };
+  associatedBrands: string[];
+  competitorDensity: "low" | "medium" | "high";
+  weeklyVolumes: number[];        // last 4 weeks
+  evidence: TrendEvidence[];
+  actionSuggestion: string;
 }
 
 export interface WeeklyBrief {

@@ -8,16 +8,17 @@ export const competitorBrands: CompetitorBrand[] = [
 ];
 
 export const competitorActivities: CompetitorActivity[] = [
-  // 喜茶 Heytea Instagram — from user's Excel research
-  { id: "a1", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-06-11", type: "联名", title: "世界杯/NBA总决赛联名饮品，撞色系列限定", platform: "instagram", heat: "高" },
-  { id: "a2", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-06-05", type: "开店", title: "纽约新店预热活动，持续发布门店相关动态", platform: "instagram", heat: "中" },
-  { id: "a3", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-05-20", type: "开店", title: "纽约多店开业宣告，约20家新店消息密集发布", platform: "instagram", heat: "高" },
-  { id: "a4", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-04-15", type: "新品", title: "夏季水果系列新品，6-7款彩色主题饮品", platform: "instagram", heat: "高" },
-  { id: "a5", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-04-07", type: "品牌", title: "新品成功感谢顾客，发布未公开研发花絮", platform: "instagram", heat: "中" },
-  { id: "a6", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-03-25", type: "新品", title: "椰子咖啡系列新品，4-5款上市", platform: "instagram", heat: "中" },
-  { id: "a7", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-03-12", type: "新品", title: "草莓系列新品，4款", platform: "instagram", heat: "中" },
-  { id: "a8", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-02-24", type: "新品", title: "芝士奶茶系列新品，4-5款", platform: "instagram", heat: "中" },
-  { id: "a9", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-01-21", type: "新品", title: "芒果奶茶系列新品，4款", platform: "instagram", heat: "中" },
+  // 喜茶 Heytea Instagram — 用户手工采集的美国INS账号内容
+  // 数据口径说明：每条活动 = 一个事件（一家店/一款新品），括号内为该事件在社媒上的发帖量
+  { id: "a1", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-06-11", type: "联名", title: "世界杯/NBA总决赛联名系列，撞色限定杯身+周边（约8条帖）", platform: "instagram", heat: "高" },
+  { id: "a2", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-06-05", type: "开店", title: "纽约新店预热：门店围挡揭幕/产品预告/倒计时系列（约6条帖）", platform: "instagram", heat: "中" },
+  { id: "a3", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-05-20", type: "开店", title: "纽约首店正式开业：门店环境/开业盛况/顾客打卡/幕后花絮（约20条帖）", platform: "instagram", heat: "高" },
+  { id: "a4", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-04-15", type: "新品", title: "夏季水果系列一款新品上线：产品特写/原料产地/限时预告（约5条帖）", platform: "instagram", heat: "高" },
+  { id: "a5", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-04-07", type: "品牌", title: "新品热销感谢帖+未公开研发花絮/杯身设计迭代故事（约3条帖）", platform: "instagram", heat: "中" },
+  { id: "a6", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-03-25", type: "新品", title: "椰子咖啡一款新品：口味剧透/椰林产地溯源/调饮教程（约5条帖）", platform: "instagram", heat: "中" },
+  { id: "a7", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-03-12", type: "新品", title: "草莓系列一款新品：果肉特写/粉色调视觉/限时供应预告（约4条帖）", platform: "instagram", heat: "中" },
+  { id: "a8", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-02-24", type: "新品", title: "芝士奶茶一款新品：奶盖分层展示/拉花教程/口感测评（约5条帖）", platform: "instagram", heat: "中" },
+  { id: "a9", brandId: "br1", brandName: "喜茶 HEYTEA", date: "2026-01-21", type: "新品", title: "芒果奶茶一款新品：鲜果原材料展示/调配过程/粉丝试饮（约4条帖）", platform: "instagram", heat: "中" },
 
   // 蜜雪冰城
   { id: "a10", brandId: "br2", brandName: "蜜雪冰城 MIXUE", date: "2026-06-14", type: "开店", title: "越南胡志明市首店开业，TikTok探店视频爆发", platform: "tiktok", heat: "高" },

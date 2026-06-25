@@ -727,30 +727,36 @@ export const ips: IP[] = [
 ];
 
 export const calendarEvents: CalendarEvent[] = [
-  { id: "cal1", date: "2026-02-09", region: "US", country: "US", name: "Super Bowl", type: "sports", suggestion: "赛事观赛场景 → 限定套餐 + 观赛主题杯身" },
-  { id: "cal2", date: "2026-04-17", region: "US", country: "US", name: "Coachella", type: "festival", suggestion: "音乐节场景 → 联名特调 + 社交媒体打卡活动" },
-  { id: "cal3", date: "2026-07-04", region: "US", country: "US", name: "Independence Day", type: "holiday", suggestion: "国庆主题 → 红蓝白限定杯身 + 爱国主题UGC" },
-  { id: "cal4", date: "2026-10-31", region: "US", country: "US", name: "Halloween", type: "cultural", suggestion: "南瓜/幽灵主题 → 限定口味 + 门店装饰 + AR滤镜" },
-  { id: "cal5", date: "2026-11-26", region: "US", country: "US", name: "Thanksgiving", type: "holiday", suggestion: "感恩季 → 'Thankful for Tea' 话题 + 家庭套餐" },
-  { id: "cal6", date: "2026-12-25", region: "US", country: "US", name: "Christmas", type: "holiday", suggestion: "圣诞限定 → 姜饼/薄荷口味 + 礼品卡推广" },
-  { id: "cal7", date: "2026-12-26", region: "UK", country: "UK", name: "Boxing Day", type: "holiday", suggestion: "节后促销 → 限定礼盒 + 冬日暖饮系列" },
-  { id: "cal8", date: "2026-07-01", region: "UK", country: "UK", name: "Wimbledon", type: "sports", suggestion: "网球赛季 → 英式下午茶主题 + 草地观赛联名" },
-  { id: "cal9", date: "2026-08-30", region: "UK", country: "UK", name: "Notting Hill Carnival", type: "festival", suggestion: "加勒比文化节 → 热带水果限定 + 街头文化联名" },
-  { id: "cal10", date: "2026-04-13", region: "SEA", country: "TH", name: "泼水节 (Songkran)", type: "cultural", suggestion: "泰国新年 → 清凉茶饮系列 + 泼水主题社交媒体互动" },
-  { id: "cal11", date: "2026-02-17", region: "SEA", country: "SG", name: "农历新年", type: "cultural", suggestion: "春节限定 → 生肖主题杯身 + 红包营销 + 新年礼盒" },
-  { id: "cal12", date: "2026-03-05", region: "SEA", country: "ID", name: "斋月 (Ramadan)", type: "cultural", suggestion: "斋月特供 → 日落开斋时段限定 + 清真认证标注 + 社区捐赠" },
-  { id: "cal13", date: "2026-11-01", region: "SEA", country: "MY", name: "排灯节 (Deepavali)", type: "cultural", suggestion: "印度新年 → 金色主题限定 + 香料奶茶系列 + 节日礼品装" },
-  { id: "cal14", date: "2026-01-26", region: "AU", country: "AU", name: "Australia Day", type: "holiday", suggestion: "澳洲国庆 → 南半球夏日特调 + 海滩主题pop-up" },
-  { id: "cal15", date: "2026-05-22", region: "AU", country: "AU", name: "Vivid Sydney", type: "festival", suggestion: "灯光艺术节 → 发光杯身 + 灯光装置联名打卡" },
-  // Missing countries
-  { id: "cal16", date: "2026-07-01", region: "US", country: "CA", name: "Canada Day", type: "holiday", suggestion: "加拿大国庆 → 枫叶主题杯身 + 红白限定特调" },
-  { id: "cal17", date: "2026-07-14", region: "UK", country: "FR", name: "Bastille Day", type: "holiday", suggestion: "法国国庆 → 法式甜点联名 + 蓝白红限定杯身" },
-  { id: "cal18", date: "2026-10-03", region: "UK", country: "DE", name: "Oktoberfest", type: "festival", suggestion: "慕尼黑啤酒节 → 德国啤酒风味特调 + 巴伐利亚主题装饰" },
-  { id: "cal19", date: "2026-06-12", region: "SEA", country: "PH", name: "Independence Day (PH)", type: "holiday", suggestion: "菲律宾独立日 → 热带水果限定 + 民族色彩杯身设计" },
-  { id: "cal20", date: "2026-02-14", region: "SEA", country: "VN", name: "Tet (越南新年)", type: "cultural", suggestion: "越南春节 → 花卉主题杯身 + 年货礼盒 + 红包营销" },
-  { id: "cal21", date: "2026-03-20", region: "SEA", country: "JP", name: "樱花季 (Sakura Season)", type: "cultural", suggestion: "樱花季限定 → 樱花风味特调 + 粉色系杯身 + 赏樱打卡活动" },
-  { id: "cal22", date: "2026-09-15", region: "SEA", country: "KR", name: "秋夕 (Chuseok)", type: "cultural", suggestion: "韩国中秋 → 传统茶礼套装 + 韩服主题门店装饰" },
-  { id: "cal23", date: "2026-10-01", region: "SEA", country: "CN", name: "中国国庆节", type: "holiday", suggestion: "黄金周限定 → 国庆主题杯身 + 旅行套餐联名" },
+  // ═══ 北美 ═══
+  { id: "cal1", date: "2026-01-18", region: "US", country: "US", name: "Winter Fancy Food Show", type: "expo", suggestion: "拉斯维加斯 · 特色食品展 — 北美最大精品食品饮料展会，新品发布和渠道对接核心场景" },
+  { id: "cal2", date: "2026-03-07", region: "US", country: "US", name: "Natural Products Expo West", type: "expo", suggestion: "阿纳海姆 · 天然产品展 — 植物基/功能性/有机食品饮料趋势风向标" },
+  { id: "cal3", date: "2026-05-02", region: "US", country: "US", name: "NRA Show (National Restaurant Assoc.)", type: "expo", suggestion: "芝加哥 · 餐饮协会展 — 北美餐饮设备、食材、饮品全产业链展会" },
+  { id: "cal4", date: "2026-06-28", region: "US", country: "US", name: "Summer Fancy Food Show", type: "expo", suggestion: "纽约 · 夏季特色食品展 — 下半年新品趋势集中亮相" },
+  { id: "cal5", date: "2026-09-15", region: "US", country: "US", name: "BevNET Live", type: "conference", suggestion: "饮料行业峰会 — 新品牌路演、渠道策略、投资人对接" },
+  { id: "cal6", date: "2026-10-17", region: "US", country: "US", name: "Coffee Fest", type: "trade", suggestion: "精品咖啡交易会 — 咖啡豆、设备、RTD咖啡品牌集中展示" },
+  { id: "cal7", date: "2026-05-10", region: "US", country: "CA", name: "SIAL Canada", type: "expo", suggestion: "多伦多 · 北美食品创新展 — 跨境贸易和食品创新展示平台" },
+
+  // ═══ 欧洲 ═══
+  { id: "cal8", date: "2026-03-08", region: "UK", country: "UK", name: "IFE Manufacturing", type: "expo", suggestion: "伦敦 · 国际食品饮料制造展 — 原料、配料、加工技术供应链展会" },
+  { id: "cal9", date: "2026-06-15", region: "UK", country: "UK", name: "Taste of London", type: "festival", suggestion: "伦敦 · 美食节 — 消费者端品牌曝光和产品试饮的核心场景" },
+  { id: "cal10", date: "2026-10-10", region: "UK", country: "DE", name: "Anuga", type: "expo", suggestion: "科隆 · 世界最大食品博览会 — 全球食品饮料行业风向标，每两年一届" },
+  { id: "cal11", date: "2026-10-18", region: "UK", country: "FR", name: "SIAL Paris", type: "expo", suggestion: "巴黎 · 国际食品展 — 与Anuga交替，覆盖全球食品创新和贸易" },
+
+  // ═══ 东南亚 ═══
+  { id: "cal12", date: "2026-03-10", region: "SEA", country: "JP", name: "Foodex Japan", type: "expo", suggestion: "东京 · 日本最大食品饮料展 — 亚洲食材趋势和日本市场准入窗口" },
+  { id: "cal13", date: "2026-04-22", region: "SEA", country: "SG", name: "FHA Food & Beverage", type: "expo", suggestion: "新加坡 · 亚洲食品酒店展 — 东南亚最大F&B贸易展，覆盖东盟市场" },
+  { id: "cal14", date: "2026-05-26", region: "SEA", country: "TH", name: "THAIFEX Anuga Asia", type: "expo", suggestion: "曼谷 · 亚洲食品展 — 东南亚食品饮料创新、进出口贸易核心平台" },
+  { id: "cal15", date: "2026-05-12", region: "SEA", country: "KR", name: "Seoul Food & Hotel", type: "expo", suggestion: "首尔 · 食品酒店展 — 韩国食品趋势、K-Food出海窗口" },
+  { id: "cal16", date: "2026-06-08", region: "SEA", country: "CN", name: "FBIF 食品饮料创新论坛", type: "conference", suggestion: "上海 · 中国最大食品饮料创新峰会 — 产品创新、包装设计、品牌策略" },
+  { id: "cal17", date: "2026-03-22", region: "SEA", country: "CN", name: "春季糖酒会", type: "trade", suggestion: "成都 · 全国糖酒商品交易会 — 中国最大食品酒类交易会，渠道招商核心场景" },
+  { id: "cal18", date: "2026-11-05", region: "SEA", country: "CN", name: "FHC 上海环球食品展", type: "expo", suggestion: "上海 · 环球食品展 — 进口食品、国际品牌进入中国的首选展会" },
+  { id: "cal19", date: "2026-09-01", region: "SEA", country: "VN", name: "Vietfood & Beverage", type: "expo", suggestion: "胡志明市 · 越南食品饮料展 — 越南市场快速增长，茶饮和咖啡品类关注度高" },
+  { id: "cal20", date: "2026-08-05", region: "SEA", country: "ID", name: "SIAL Interfood Indonesia", type: "expo", suggestion: "雅加达 · 印尼食品展 — 东南亚最大人口市场，清真食品和茶饮品类增长显著" },
+
+  // ═══ 澳洲 ═══
+  { id: "cal21", date: "2026-03-15", region: "AU", country: "AU", name: "Fine Food Australia", type: "expo", suggestion: "悉尼 · 澳洲最大食品饮料展 — 精品食品、咖啡文化和功能性饮品趋势" },
+  { id: "cal22", date: "2026-09-01", region: "AU", country: "AU", name: "Naturally Good Expo", type: "expo", suggestion: "悉尼 · 天然健康产品展 — 植物基、有机、功能性食品饮料专业展会" },
+
 ];
 
 export const weeklyBrief: WeeklyBrief = {

@@ -1,403 +1,287 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Flame, TrendingUp, AlertTriangle, Users, Zap, Loader2 } from "lucide-react";
-import { trends as mockTrends, countryLabel, languageLabel, emotionLabel } from "@/lib/mock-data";
-import { useBrandPreset } from "@/lib/brand-context";
-import { FilterPanel, FilterChips, type FilterGroup } from "@/components/layout/filter-panel";
 import { cn } from "@/lib/utils";
-import type { Platform, LifecycleStage, ContentFormat, Country, Language, Emotion, Market, ContentItem } from "@/types";
+import { trendTopics } from "@/lib/trend-data";
+import { subCategoryLabel, type TrendCategory, type TrendSubCategory } from "@/types";
+import { trendsGlossary } from "@/lib/glossary";
+import { InfoTip, InfoLabel } from "@/components/ui/info-tip";
+import {
+  TrendingUp, TrendingDown, ChevronDown, ChevronUp,
+  BarChart3, FlaskConical, Globe, Target,
+} from "lucide-react";
 
-function OverlapBadge({ score }: { score: number }) {
-  const color =
-    score >= 90 ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10" :
-    score >= 80 ? "border-amber-500/50 text-amber-400 bg-amber-500/10" :
-    "border-blue-400/50 text-blue-400 bg-blue-400/10";
-  return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium shrink-0", color)}>
-      {score}% 重合
-    </span>
-  );
-}
+const tg = (term: string) => trendsGlossary.find((e) => e.term === term);
 
-function LifecycleBadge({ stage, estimatedWindow }: {
-  stage: LifecycleStage; estimatedWindow: string;
-}) {
-  const config = {
-    rising: "border-emerald-500/50 text-emerald-400 bg-emerald-500/10",
-    peak: "border-amber-500/50 text-amber-400 bg-amber-500/10",
-    declining: "border-red-500/50 text-red-400 bg-red-500/10",
-  };
-  const label = stage === "rising" ? "Rising" : stage === "peak" ? "Peak" : "Declining";
-  return (
-    <div className="flex items-center gap-1.5 text-xs">
-      <span className={cn("rounded-full border px-2 py-0.5 font-medium", config[stage])}>{label}</span>
-      <span className="text-slate-500">窗口 {estimatedWindow}</span>
-    </div>
-  );
-}
-
-const platformLabel: Record<string, string> = {
-  tiktok: "TikTok", instagram: "Instagram", youtube_shorts: "YT Shorts", youtube: "YouTube",
+const categoryMeta: Record<TrendCategory, { label: string; icon: typeof Target; color: string }> = {
+  ingredient: { label: "原料/口味", icon: FlaskConical, color: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
+  category: { label: "品类赛道", icon: BarChart3, color: "border-blue-500/30 bg-blue-500/10 text-blue-400" },
+  regional: { label: "区域市场", icon: Globe, color: "border-amber-500/30 bg-amber-500/10 text-amber-400" },
+  strategy: { label: "竞品策略", icon: Target, color: "border-purple-500/30 bg-purple-500/10 text-purple-400" },
 };
-const marketLabel: Record<Market, string> = { US: "北美", UK: "欧洲", AU: "澳洲", SEA: "东南亚" };
 
-const allPlatforms: Platform[] = ["tiktok", "instagram", "youtube_shorts", "youtube"];
-const allLifecycle: LifecycleStage[] = ["rising", "peak", "declining"];
-const allFormats: ContentFormat[] = ["hashtag", "audio", "challenge", "short_video", "long_video"];
-const allCountries = Object.keys(countryLabel) as Country[];
-const allLanguages = Object.keys(languageLabel) as Language[];
-const allEmotions = Object.keys(emotionLabel) as Emotion[];
+// Sub-category keys per main dimension
+const subCategoriesByCategory: Record<TrendCategory, TrendSubCategory[]> = {
+  ingredient: ["coffee_tea", "fruit", "dairy"],
+  category: ["tea_drink", "coffee", "functional", "prepared_food"],
+  regional: ["north_america", "sea", "europe", "middle_east"],
+  strategy: ["content", "expansion", "pricing"],
+};
+
+const densityLabel: Record<string, string> = { low: "低", medium: "中", high: "高" };
+const densityColor: Record<string, string> = {
+  low: "text-emerald-400",
+  medium: "text-amber-400",
+  high: "text-red-400",
+};
+
+const allCategories: Array<TrendCategory | "all"> = ["all", "ingredient", "category", "regional", "strategy"];
+const allPlatforms: string[] = ["全部", "tiktok", "instagram", "facebook"];
+const platformLabel: Record<string, string> = { tiktok: "TikTok", instagram: "Instagram", facebook: "Facebook" };
 
 export default function TrendsPage() {
-  const { brandPreset, activeStrategy, strategies, setActiveStrategy } = useBrandPreset();
-  const strategy = activeStrategy;
+  const [categoryFilter, setCategoryFilter] = useState<TrendCategory | "all">("all");
+  const [subCategoryFilter, setSubCategoryFilter] = useState<TrendSubCategory | "all">("all");
+  const [platformFilter, setPlatformFilter] = useState<string>("全部");
+  const [sortBy, setSortBy] = useState<"growth" | "volume">("growth");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Multi-select filter state
-  const [selPlatforms, setSelPlatforms] = useState<string[]>([]);
-  const [selCountries, setSelCountries] = useState<string[]>([]);
-  const [selLanguages, setSelLanguages] = useState<string[]>([]);
-  const [selEmotions, setSelEmotions] = useState<string[]>([]);
-  const [selGenders, setSelGenders] = useState<string[]>([]);
-  const [selLifecycle, setSelLifecycle] = useState<string[]>([]);
-  const [selFormats, setSelFormats] = useState<string[]>([]);
-  const [overlapThreshold, setOverlapThreshold] = useState(0);
+  const handleCategoryChange = useCallback((cat: TrendCategory | "all") => {
+    setCategoryFilter(cat);
+    setSubCategoryFilter("all");
+  }, []);
 
-  // Committed filters (applied on submit)
-  const [committed, setCommitted] = useState<{
-    platforms: string[]; countries: string[]; languages: string[]; emotions: string[];
-    genders: string[]; lifecycle: string[]; formats: string[]; overlap: number;
-  }>({ platforms: [], countries: [], languages: [], emotions: [], genders: [], lifecycle: [], formats: [], overlap: 0 });
-
-  // Data source
-  const [dataSource, setDataSource] = useState<"merged" | "youtube" | "google">("merged");
-  const [period, setPeriod] = useState<"day" | "week" | "month">("day");
-  const [apiData, setApiData] = useState<ContentItem[]>([]);
-  const [apiLoading, setApiLoading] = useState(false);
-  const [apiError, setApiError] = useState(false);
-  const [apiSources, setApiSources] = useState<string[]>([]);
-
-  // Brand preset glow tracking
-  const [presetGlow, setPresetGlow] = useState<Set<string>>(new Set());
-  const prevPresetRef = useRef(brandPreset);
-  const prevStrategyRef = useRef(activeStrategy?.id);
-
-  // Sync filter checkboxes with active strategy
-  useEffect(() => {
-    const strategyChanged = prevStrategyRef.current !== activeStrategy?.id;
-    const presetActivated = brandPreset && !prevPresetRef.current;
-    const presetDeactivated = !brandPreset && prevPresetRef.current;
-
-    if ((presetActivated || strategyChanged) && brandPreset && activeStrategy) {
-      // Strategy activated or switched: pre-check filter panel
-      setSelCountries([...activeStrategy.countries]);
-      setSelLanguages([...activeStrategy.languages]);
-      setSelEmotions([...activeStrategy.emotions]);
-      setSelGenders(activeStrategy.gender !== "all" ? [activeStrategy.gender] : []);
-      setOverlapThreshold(0);
-      setPresetGlow(new Set(["country", "language", "emotion", "gender"]));
-      // Auto-apply
-      setCommitted({
-        platforms: selPlatforms, lifecycle: selLifecycle, formats: selFormats, overlap: 0,
-        countries: [...activeStrategy.countries],
-        languages: [...activeStrategy.languages],
-        emotions: [...activeStrategy.emotions],
-        genders: activeStrategy.gender !== "all" ? [activeStrategy.gender] : [],
-      });
-    } else if (presetDeactivated) {
-      setSelCountries([]); setSelLanguages([]); setSelEmotions([]);
-      setSelGenders([]); setOverlapThreshold(0);
-      setPresetGlow(new Set());
-      setCommitted({ platforms: selPlatforms, countries: [], languages: [], emotions: [], genders: [], lifecycle: selLifecycle, formats: selFormats, overlap: 0 });
-    }
-    prevPresetRef.current = brandPreset;
-    prevStrategyRef.current = activeStrategy?.id;
-  }, [brandPreset, activeStrategy]);
-
-  // API fetch
-  const fetchApiData = useCallback(async () => {
-    setApiLoading(true); setApiError(false);
-    try {
-      const res = await fetch(`/api/trends/all?source=${dataSource}&period=${period}&max=50`);
-      if (res.ok) { const json = await res.json(); setApiData(json.items); setApiSources(json.sources); }
-      else setApiError(true);
-    } catch { setApiError(true); }
-    finally { setApiLoading(false); }
-  }, [dataSource, period]);
-
-  useEffect(() => { fetchApiData(); }, [fetchApiData]);
-
-  const allTrends = apiData.length > 0 ? apiData : mockTrends;
-
-  // Apply committed filters
-  const filtered = allTrends
-    .filter((t) => committed.platforms.length === 0 || committed.platforms.includes(t.platform))
+  const filtered = trendTopics
+    .filter((t) => categoryFilter === "all" || t.category === categoryFilter)
+    .filter((t) => subCategoryFilter === "all" || t.subCategory === subCategoryFilter)
     .filter((t) => {
-      if (brandPreset && committed.countries.length === 0) return (activeStrategy?.countries || []).includes(t.country);
-      return committed.countries.length === 0 || committed.countries.includes(t.country);
+      if (platformFilter === "全部") return true;
+      const pct = t.platforms[platformFilter as "tiktok" | "instagram" | "facebook"];
+      return pct >= 15;
     })
-    .filter((t) => {
-      if (brandPreset && committed.languages.length === 0) return activeStrategy?.languages.includes(t.language);
-      return committed.languages.length === 0 || committed.languages.includes(t.language);
-    })
-    .filter((t) => {
-      if (brandPreset && committed.emotions.length === 0) return activeStrategy?.emotions.includes(t.emotion);
-      return committed.emotions.length === 0 || committed.emotions.includes(t.emotion);
-    })
-    .filter((t) => committed.genders.length === 0 || (
-      committed.genders.includes("female") ? t.demographicAffinity.female >= 0.6 :
-      committed.genders.includes("male") ? t.demographicAffinity.male >= 0.6 : true
-    ))
-    .filter((t) => committed.lifecycle.length === 0 || committed.lifecycle.includes(t.lifecycle.stage))
-    .filter((t) => committed.formats.length === 0 || committed.formats.includes(t.format))
-    .filter((t) => t.audienceOverlap >= committed.overlap)
-    .sort((a, b) => b.metrics.heatScore - a.metrics.heatScore);
+    .sort((a, b) => sortBy === "growth" ? b.growthRate - a.growthRate : b.discussionVolume - a.discussionVolume);
 
-  // Active filter count
-  const activeCount = committed.platforms.length + committed.countries.length + committed.languages.length +
-    committed.emotions.length + committed.genders.length + committed.lifecycle.length +
-    committed.formats.length + (committed.overlap > 0 ? 1 : 0);
-
-  // Strategy matching: check if filters EXACTLY match a strategy
-  const matchStrategy = (c: typeof committed): string | null => {
-    const arrEq = (a: string[], b: string[]) => a.length === b.length && a.every((v) => b.includes(v));
-    const match = strategies.find((s) =>
-      arrEq(c.countries, s.countries) &&
-      arrEq(c.languages, s.languages) &&
-      arrEq(c.emotions, s.emotions) &&
-      arrEq(c.genders, s.gender === "all" ? ["female", "male"] : [s.gender])
-    );
-    return match?.id || null;
-  };
-
-  // Apply filters (user-triggered only)
-  const applyFilters = () => {
-    const c = {
-      platforms: selPlatforms, countries: selCountries, languages: selLanguages,
-      emotions: selEmotions, genders: selGenders, lifecycle: selLifecycle,
-      formats: selFormats, overlap: overlapThreshold,
-    };
-    setCommitted(c);
-    // Check strategy match on user-triggered apply
-    const matchedId = matchStrategy(c);
-    setActiveStrategy(matchedId);
-  };
-
-  // Reset
-  const resetFilters = () => {
-    setSelPlatforms([]); setSelCountries([]); setSelLanguages([]); setSelEmotions([]);
-    setSelGenders([]); setSelLifecycle([]); setSelFormats([]); setOverlapThreshold(0);
-    setCommitted({ platforms: [], countries: [], languages: [], emotions: [], genders: [], lifecycle: [], formats: [], overlap: 0 });
-  };
-
-  // Remove single chip
-  const removeChip = (gk: string, v: string) => {
-    const map: Record<string, [string[], (a: string[]) => void]> = {
-      platform: [selPlatforms, setSelPlatforms], country: [selCountries, setSelCountries],
-      language: [selLanguages, setSelLanguages], emotion: [selEmotions, setSelEmotions],
-      gender: [selGenders, setSelGenders], lifecycle: [selLifecycle, setSelLifecycle],
-      format: [selFormats, setSelFormats],
-    };
-    const [arr, setter] = map[gk] || [[], () => {}];
-    setter(arr.filter((x) => x !== v));
-  };
-
-  // Build filter groups for panel
-  const buildOptions = (key: string) => ({ value: key, label: key === "all" ? "全部" : key });
-  const filterGroups: FilterGroup[] = [
-    { key: "platform", label: "平台", glow: false, selected: selPlatforms.length ? selPlatforms : [],
-      options: allPlatforms.map((p) => ({ value: p, label: platformLabel[p] || p })),
-      onChange: (v) => { setPresetGlow((pg) => { pg.delete("platform"); return new Set(pg); }); setSelPlatforms(v.filter((x) => x !== "all")) } },
-    { key: "country", label: "国家", glow: presetGlow.has("country"),
-      selected: selCountries.length ? selCountries : [],
-      options: allCountries.map((c) => ({ value: c, label: countryLabel[c] })),
-      onChange: (v) => { setPresetGlow((pg) => { pg.delete("country"); return new Set(pg); }); setSelCountries(v.filter((x) => x !== "all")) } },
-    { key: "language", label: "语言", glow: presetGlow.has("language"),
-      selected: selLanguages.length ? selLanguages : [],
-      options: allLanguages.map((l) => ({ value: l, label: languageLabel[l] })),
-      onChange: (v) => { setPresetGlow((pg) => { pg.delete("language"); return new Set(pg); }); setSelLanguages(v.filter((x) => x !== "all")) } },
-    { key: "emotion", label: "情绪", glow: presetGlow.has("emotion"),
-      selected: selEmotions.length ? selEmotions : [],
-      options: allEmotions.map((e) => ({ value: e, label: emotionLabel[e] })),
-      onChange: (v) => { setPresetGlow((pg) => { pg.delete("emotion"); return new Set(pg); }); setSelEmotions(v.filter((x) => x !== "all")) } },
-    { key: "gender", label: "人群·性别", glow: presetGlow.has("gender"),
-      selected: selGenders.length ? selGenders : [],
-      options: [{ value: "female", label: "女性为主" }, { value: "male", label: "男性为主" }],
-      onChange: (v) => { setPresetGlow((pg) => { pg.delete("gender"); return new Set(pg); }); setSelGenders(v.filter((x) => x !== "all")) } },
-    { key: "lifecycle", label: "生命周期", glow: false,
-      selected: selLifecycle.length ? selLifecycle : [],
-      options: allLifecycle.map((s) => ({ value: s, label: s === "rising" ? "Rising" : s === "peak" ? "Peak" : "Declining" })),
-      onChange: (v) => setSelLifecycle(v.filter((x) => x !== "all")) },
-    { key: "format", label: "内容格式", glow: false,
-      selected: selFormats.length ? selFormats : [],
-      options: allFormats.map((f) => ({ value: f, label: f === "hashtag" ? "Hashtag" : f === "audio" ? "Audio" : f === "challenge" ? "Challenge" : f === "short_video" ? "短视频" : "长视频" })),
-      onChange: (v) => setSelFormats(v.filter((x) => x !== "all")) },
-  ];
-
-  // Active chips — include brand preset values when active
-  const brandChipGroups = (brandPreset && activeStrategy) ? [
-    ...(committed.countries.length === 0 ? [{ key: "brand-country", label: "品牌·国家", activeValues: activeStrategy.countries.slice(0, 3).map((c: Country) => ({ value: c, label: countryLabel[c] })) }] : []),
-    ...(committed.languages.length === 0 ? [{ key: "brand-language", label: "品牌·语言", activeValues: activeStrategy.languages.slice(0, 3).map((l: Language) => ({ value: l, label: languageLabel[l] })) }] : []),
-    ...(committed.emotions.length === 0 ? [{ key: "brand-emotion", label: "品牌·情绪", activeValues: activeStrategy.emotions.slice(0, 3).map((e: Emotion) => ({ value: e, label: emotionLabel[e] })) }] : []),
-    ...(committed.genders.length === 0 && activeStrategy.gender !== "all" ? [{ key: "brand-gender", label: "品牌·性别", activeValues: [{ value: activeStrategy.gender, label: activeStrategy.gender === "female" ? "女性为主" : "男性为主" }] }] : []),
-  ] : [];
-  const chipGroups = [
-    ...brandChipGroups,
-    { key: "platform", label: "平台", activeValues: committed.platforms.map((v) => ({ value: v, label: platformLabel[v] || v })) },
-    { key: "country", label: "国家", activeValues: committed.countries.map((v) => ({ value: v, label: countryLabel[v as Country] || v })) },
-    { key: "language", label: "语言", activeValues: committed.languages.map((v) => ({ value: v, label: languageLabel[v as Language] || v })) },
-    { key: "emotion", label: "情绪", activeValues: committed.emotions.map((v) => ({ value: v, label: emotionLabel[v as Emotion] || v })) },
-    { key: "gender", label: "性别", activeValues: committed.genders.map((v) => ({ value: v, label: v === "female" ? "女性为主" : "男性为主" })) },
-    { key: "lifecycle", label: "阶段", activeValues: committed.lifecycle.map((v) => ({ value: v, label: v === "rising" ? "Rising" : v === "peak" ? "Peak" : "Declining" })) },
-    { key: "format", label: "格式", activeValues: committed.formats.map((v) => ({ value: v, label: v === "hashtag" ? "Hashtag" : v === "audio" ? "Audio" : v === "challenge" ? "Challenge" : v === "short_video" ? "短视频" : "长视频" })) },
-    ...(committed.overlap > 0 ? [{ key: "overlap", label: "重合度", activeValues: [{ value: String(committed.overlap), label: `≥${committed.overlap}%` }] }] : []),
-  ];
+  const showSubFilter = categoryFilter !== "all";
+  const subOptions = showSubFilter ? subCategoriesByCategory[categoryFilter] : [];
 
   return (
-    <FilterPanel
-      groups={filterGroups}
-      overlapValue={overlapThreshold}
-      onOverlapChange={setOverlapThreshold}
-      onApply={applyFilters}
-      onReset={resetFilters}
-      activeCount={activeCount}
-    >
-      <div className="space-y-4">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-slate-50">实时热点</h1>
-          <p className="mt-0.5 text-sm text-slate-400">
-            按受众重合度排序。右侧面板筛选 · 品牌预设自动匹配。
-          </p>
-        </div>
+    <div className="space-y-4 max-w-4xl">
+      {/* Page header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-50">行业趋势</h1>
+        <p className="mt-0.5 text-sm text-slate-400">
+          热点话题聚合 · 按维度分类的行业信号雷达
+        </p>
+      </div>
 
-        {/* Toolbar: data source + brand preset status */}
+      {/* Control bar */}
+      <div className="rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-2.5 space-y-2">
+        {/* Row 1: main category filter */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Period toggle */}
-          <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
-            {(["day", "week", "month"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", period === p ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}
-              >
-                {p === "day" ? "日" : p === "week" ? "周" : "月"}
-              </button>
-            ))}
-          </span>
-
-          {/* Data source toggle */}
-          <span className="flex items-center gap-0.5 rounded-lg border border-slate-700 bg-slate-800/80 p-0.5">
-            {(["merged", "youtube", "google"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setDataSource(s)}
-                className={cn("px-2 py-0.5 text-xs rounded-md transition-colors", dataSource === s ? "bg-amber-500/20 text-amber-400" : "text-slate-500 hover:text-slate-300")}
-              >
-                {s === "merged" ? "全网" : s === "youtube" ? "YT" : "Google"}
-              </button>
-            ))}
-          </span>
-          {apiLoading && <Loader2 className="h-3 w-3 animate-spin text-amber-500" />}
-          {apiError && (
-            <button onClick={fetchApiData} className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" /> API 失败，重试
+          <InfoLabel tip={tg("trendCategory")?.explanation || ""}>
+            <span className="text-[10px] text-slate-500 shrink-0 mr-1">维度:</span>
+          </InfoLabel>
+          {allCategories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => handleCategoryChange(cat)}
+              className={cn(
+                "px-2.5 py-1 text-xs rounded-md transition-colors",
+                categoryFilter === cat
+                  ? "bg-amber-500/20 text-amber-400"
+                  : "text-slate-500 hover:text-slate-300"
+              )}
+            >
+              {cat === "all" ? "全部" : categoryMeta[cat].label}
             </button>
-          )}
-          {!apiLoading && !apiError && apiSources.length > 0 && (
-            <span className="text-xs text-slate-500">{apiSources.map(s => s === "mock" ? "离线" : s === "youtube" ? "YouTube实时" : s).join(" + ")}</span>
-          )}
-
-          {brandPreset && (
-            <div className="flex items-center gap-1.5 ml-auto">
-              <span className="text-xs text-amber-400 font-medium">◆ {activeStrategy?.name || "品牌预设"}</span>
-              {strategy?.markets.map((m) => (
-                <Badge key={m} variant="outline" className="text-xs border-amber-500/30 text-amber-400/80 bg-amber-500/5">{marketLabel[m]}</Badge>
-              ))}
-              <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400/80 bg-amber-500/5">
-                {activeStrategy?.ageMin}-{activeStrategy?.ageMax}岁
-              </Badge>
-            </div>
-          )}
-
-          <span className="ml-auto text-xs text-slate-500">{filtered.length} 个结果</span>
+          ))}
+          <span className="text-slate-700 mx-1">|</span>
+          <span className="text-[10px] text-slate-500 shrink-0 mr-1">平台侧重:</span>
+          {allPlatforms.map((p) => (
+            <button
+              key={p}
+              onClick={() => setPlatformFilter(p)}
+              className={cn(
+                "px-2.5 py-1 text-xs rounded-md transition-colors",
+                platformFilter === p
+                  ? "bg-amber-500/20 text-amber-400"
+                  : "text-slate-500 hover:text-slate-300"
+              )}
+            >
+              {p === "全部" ? "全部" : platformLabel[p] || p}
+            </button>
+          ))}
+          <span className="text-slate-700 mx-2">|</span>
+          <span className="text-[10px] text-slate-500 shrink-0 mr-1">排序:</span>
+          {(["growth", "volume"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setSortBy(s)}
+              className={cn(
+                "px-2.5 py-1 text-xs rounded-md transition-colors",
+                sortBy === s
+                  ? "bg-amber-500/20 text-amber-400"
+                  : "text-slate-500 hover:text-slate-300"
+              )}
+            >
+              {s === "growth" ? "增长最快" : "讨论量最高"}
+            </button>
+          ))}
+          <span className="ml-auto text-xs text-slate-500">{filtered.length} 个趋势</span>
         </div>
 
-        {/* Active filter chips */}
-        <FilterChips groups={chipGroups} onRemove={removeChip} onClearAll={resetFilters} />
+        {/* Row 2: sub-category filter (only when a main category is selected) */}
+        {showSubFilter && (
+          <div className="flex items-center gap-2 flex-wrap border-t border-slate-700/50 pt-2">
+            <InfoLabel tip={tg("trendSubCategory")?.explanation || ""}>
+              <span className="text-[10px] text-slate-500 shrink-0 mr-1">子类:</span>
+            </InfoLabel>
+            <button
+              onClick={() => setSubCategoryFilter("all")}
+              className={cn(
+                "px-2.5 py-1 text-xs rounded-md transition-colors",
+                subCategoryFilter === "all"
+                  ? "bg-amber-500/20 text-amber-400"
+                  : "text-slate-500 hover:text-slate-300"
+              )}
+            >
+              全部
+            </button>
+            {subOptions.map((sub) => (
+              <button
+                key={sub}
+                onClick={() => setSubCategoryFilter(sub)}
+                className={cn(
+                  "px-2.5 py-1 text-xs rounded-md transition-colors",
+                  subCategoryFilter === sub
+                    ? "bg-amber-500/20 text-amber-400"
+                    : "text-slate-500 hover:text-slate-300"
+                )}
+              >
+                {subCategoryLabel[sub]}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-        {/* Trend cards */}
-        <div className="space-y-3">
-          {filtered.map((trend) => (
-            <Card key={trend.id} className="border-slate-700 bg-slate-800/50 hover:border-amber-500/20 transition-colors">
+      {/* Trend cards */}
+      <div className="space-y-3">
+        {filtered.map((topic) => {
+          const meta = categoryMeta[topic.category];
+          const isExpanded = expandedId === topic.id;
+          return (
+            <Card key={topic.id} className="border-slate-700 bg-slate-800/50 overflow-hidden">
               <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  <span className={cn("text-base font-bold shrink-0 w-6 text-center", filtered.indexOf(trend) < 3 ? "text-amber-400" : "text-slate-600")}>
-                    {filtered.indexOf(trend) + 1}
-                  </span>
+                {/* Header */}
+                <div className="flex items-start gap-3">
+                  <div className={cn("p-2 rounded-lg shrink-0", meta.color.replace("text-", "bg-").replace("/10", "/10"))}>
+                    <meta.icon className={cn("h-4 w-4", meta.color.match(/text-\S+/)?.[0])} />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <a href={trend.url || "#"} target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-100 hover:text-amber-400 transition-colors">{trend.title}</a>
-                      {trend.id.startsWith("yt-") && <Badge className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30 px-1">YT</Badge>}
-                      {trend.id.startsWith("goog-") && <Badge className="text-[10px] bg-blue-500/20 text-blue-400 border-blue-500/30 px-1">Google</Badge>}
-                      {!trend.id.startsWith("yt-") && !trend.id.startsWith("goog-") && <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{platformLabel[trend.platform]}</Badge>}
-                      <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{countryLabel[trend.country]}</Badge>
-                      <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">{languageLabel[trend.language]}</Badge>
-                      <Badge variant="outline" className="text-xs border-slate-600 text-amber-400/80">{emotionLabel[trend.emotion]}</Badge>
-                    </div>
-
-                    <div className="flex items-start gap-3 mt-1">
-                      {trend.thumbnailUrl && (
-                        <img src={trend.thumbnailUrl} alt="" className="h-16 w-28 rounded-md object-cover border border-slate-700 shrink-0" loading="lazy" />
-                      )}
-                      <p className="text-sm text-slate-400 line-clamp-3">{trend.description}</p>
-                    </div>
-
-                    <div className="flex items-center gap-4 mt-2">
-                      <LifecycleBadge stage={trend.lifecycle.stage} estimatedWindow={trend.lifecycle.estimatedWindow} />
-                      <span className="text-xs text-slate-500">竞品密度: {trend.lifecycle.competitorDensity === "low" ? "低" : trend.lifecycle.competitorDensity === "medium" ? "中" : "高"}</span>
-                    </div>
-
-                    <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
-                      <span className="flex items-center gap-1"><Flame className="h-3 w-3 text-amber-500" />热度 {trend.metrics.heatScore}</span>
-                      <span className={cn("flex items-center gap-1", trend.metrics.growthRate > 0 ? "text-emerald-400" : "text-red-400")}>
-                        <TrendingUp className="h-3 w-3" />{trend.metrics.growthRate > 0 ? "+" : ""}{trend.metrics.growthRate}%
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h3 className="font-semibold text-slate-100 text-sm">{topic.title}</h3>
+                      <span className={cn("text-[10px] px-1.5 py-0.5 rounded border shrink-0", meta.color)}>
+                        {meta.label}
                       </span>
-                      <span className="text-slate-500">{(trend.metrics.views / 1000000).toFixed(0)}M 播放</span>
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{(trend.demographicAffinity.female * 100).toFixed(0)}% 女 · {(trend.demographicAffinity.age_18_24 * 100).toFixed(0)}% 18-24</span>
-                      {trend.audienceOverlap >= 80 && trend.lifecycle.stage === "rising" && (
-                        <span className="inline-flex items-center gap-0.5 text-amber-400"><Zap className="h-3 w-3" /> 优先关注</span>
-                      )}
+                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-slate-600 text-slate-500 shrink-0">
+                        {subCategoryLabel[topic.subCategory]}
+                      </span>
                     </div>
-
-                    {trend.riskFlags && trend.riskFlags.length > 0 && (
-                      <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
-                        {trend.riskFlags.map((rf, i) => (
-                          <div key={i} className="flex items-start gap-2">
-                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
-                            <span className="text-xs text-amber-300">
-                              {rf.type === "cultural_sensitivity" ? "文化敏感" : rf.type === "religious" ? "宗教" : "品牌安全"}
-                              {rf.level === "low" ? "（低）" : rf.level === "medium" ? "（中）" : "（高）"}: {rf.note}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <p className="text-sm text-slate-400 line-clamp-2">{topic.description}</p>
                   </div>
                 </div>
+
+                {/* Metrics row */}
+                <div className="flex items-center gap-5 mt-3 text-xs flex-wrap">
+                  <span className="text-slate-500">
+                    <InfoLabel tip={tg("discussionVolume")?.explanation || ""} calc={tg("discussionVolume")?.calc}>
+                      讨论量
+                    </InfoLabel>{" "}
+                    <span className="text-slate-200 font-medium">{(topic.discussionVolume / 10000).toFixed(0)}万</span>
+                  </span>
+                  <span className={cn("flex items-center gap-1", topic.growthRate >= 0 ? "text-emerald-400" : "text-red-400")}>
+                    {topic.growthRate >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    {topic.growthRate > 0 ? "+" : ""}{topic.growthRate}%
+                    <InfoTip content={tg("growthRate")?.explanation || ""} calc={tg("growthRate")?.calc} />
+                  </span>
+                  <span className="text-slate-500">
+                    <InfoLabel tip={tg("platformDistribution")?.explanation || ""} calc={tg("platformDistribution")?.calc}>
+                      平台
+                    </InfoLabel>
+                    :{" "}
+                    {Object.entries(topic.platforms)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([k, v]) => `${platformLabel[k] || k} ${v}%`)
+                      .join(" · ")}
+                  </span>
+                  {topic.associatedBrands.length > 0 && (
+                    <span className="text-slate-500">
+                      关联品牌:{" "}
+                      {topic.associatedBrands.map((b, i) => (
+                        <span key={b}>
+                          <span className="text-slate-300">{b}</span>
+                          {i < topic.associatedBrands.length - 1 && <span className="text-slate-600"> · </span>}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                  <span className={cn("text-xs", densityColor[topic.competitorDensity])}>
+                    <InfoLabel tip={tg("competitorDensity")?.explanation || ""} calc={tg("competitorDensity")?.calc}>
+                      竞品密度
+                    </InfoLabel>
+                    : {densityLabel[topic.competitorDensity]}
+                  </span>
+                </div>
+
+                {/* Observation */}
+                <div className="mt-3 text-xs text-slate-400 leading-relaxed border-l-2 border-slate-600 pl-2.5">
+                  {topic.actionSuggestion}
+                </div>
+
+                {/* Expand toggle */}
+                <button
+                  onClick={() => setExpandedId(isExpanded ? null : topic.id)}
+                  className="flex items-center gap-1 mt-2 text-xs text-slate-500 hover:text-amber-400 transition-colors"
+                >
+                  {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  证据链 ({topic.evidence.length}条)
+                </button>
+
+                {/* Evidence panel */}
+                {isExpanded && (
+                  <div className="mt-3 pt-3 border-t border-slate-700/50 space-y-2">
+                    {topic.evidence.map((ev, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs">
+                        <span className="text-amber-400 shrink-0 mt-0.5">·</span>
+                        <div>
+                          <span className="text-slate-300 font-medium">{ev.brand || "未知来源"}</span>
+                          <span className="text-slate-600 mx-1">·</span>
+                          <Badge variant="outline" className="text-[10px] border-slate-700 text-slate-500">
+                            {platformLabel[ev.platform] || ev.platform}
+                          </Badge>
+                          <span className="text-slate-600 mx-1">·</span>
+                          <span className="text-slate-500">{ev.date}</span>
+                          <p className="text-slate-400 mt-0.5">{ev.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
-          ))}
-          {filtered.length === 0 && (
-            <div className="text-center py-12 text-slate-500">
-              <p>本周暂无高重合度热点</p>
-              <p className="text-sm mt-1">调整筛选条件获取更多结果</p>
-            </div>
-          )}
-        </div>
+          );
+        })}
+
+        {filtered.length === 0 && (
+          <div className="text-center py-12 text-slate-500">
+            <p>该筛选条件下无趋势数据</p>
+            <p className="text-sm mt-1">调整维度或子类筛选获取更多结果</p>
+          </div>
+        )}
       </div>
-    </FilterPanel>
+    </div>
   );
 }
